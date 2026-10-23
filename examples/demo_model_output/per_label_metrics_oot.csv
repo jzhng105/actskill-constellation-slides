@@ -1,0 +1,7 @@
+label,n_eligible,n_pos,pos_rate_pct,auc,avg_precision
+lbl_premium_plan,277420,50398,18.17,0.874,0.512
+lbl_annual_upgrade,260260,32619,12.53,0.842,0.401
+lbl_family_bundle,243100,24067,9.9,0.813,0.338
+lbl_cloud_storage,225940,40594,17.97,0.905,0.588
+lbl_priority_support,208780,12875,6.17,0.781,0.246
+lbl_gift_card,191620,8048,4.2,0.796,0.207

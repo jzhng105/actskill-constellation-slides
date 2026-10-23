@@ -1,0 +1,16 @@
+{
+  "name": "znstars",
+  "description": "Claude plugins by ZNSTARS",
+  "owner": {
+    "name": "ZNSTARS",
+    "url": "https://github.com/jzhng105"
+  },
+  "plugins": [
+    {
+      "name": "constellation-slides",
+      "source": "./",
+      "description": "Interactive 3D constellation briefings and PPTX/PDF-ready decks from machine learning model results.",
+      "category": "productivity"
+    }
+  ]
+}

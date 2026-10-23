@@ -1,0 +1,27 @@
+{
+  "name": "constellation-slides",
+  "displayName": "Constellation Slides",
+  "version": "1.0.0",
+  "description": "Turn a machine learning model's output folder into an interactive 3D constellation briefing and a PowerPoint/PDF-ready slide deck, written for executives or analysts, in your own brand.",
+  "author": {
+    "name": "ZNSTARS",
+    "url": "https://github.com/jzhng105"
+  },
+  "homepage": "https://github.com/jzhng105/actskill-constellation-slides",
+  "repository": "https://github.com/jzhng105/actskill-constellation-slides",
+  "license": "BSL-1.0",
+  "keywords": [
+    "presentation",
+    "slides",
+    "machine-learning",
+    "model-results",
+    "shap",
+    "three-js",
+    "executive-briefing",
+    "pptx"
+  ],
+  "icon": "./assets/img/icon.png",
+  "documentationUrl": "https://github.com/jzhng105/actskill-constellation-slides#readme",
+  "supportUrl": "https://github.com/jzhng105/actskill-constellation-slides/issues",
+  "privacyPolicyUrl": "https://github.com/jzhng105/actskill-constellation-slides/blob/develop/PRIVACY.md"
+}

@@ -1,0 +1,9 @@
+feature,mean_abs_shap
+tenure_months,0.389
+prior_purchases,0.244
+discount_pct,0.197
+avg_order_value,0.118
+segment,0.102
+days_since_last_purchase,0.077
+income_band,0.049
+sale_dow,0.022
