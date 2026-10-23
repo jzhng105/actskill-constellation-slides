@@ -274,7 +274,7 @@ function init3D() {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.setClearColor(TH.bg, 1);
   const scene = new T.Scene();
-  const cam = new T.PerspectiveCamera(50, 1, 1, 60000);
+  const cam = new T.PerspectiveCamera(50, 1, 1, 60000); scene.add(cam);  // in the scene so camera-space effects (shooting stars) render
   const TAN = Math.tan(T.MathUtils.degToRad(25));
 
   const tex = (size, draw) => { const c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size); return new T.CanvasTexture(c); };
@@ -307,16 +307,17 @@ function init3D() {
     uniforms: {uTime: {value: 0}, uPR: {value: renderer.getPixelRatio()}},
     vertexShader: `attribute vec3 aColor; attribute float aSize; attribute float aPhase; uniform float uTime; uniform float uPR;
       varying vec3 vC; varying float vT;
-      void main(){ vC=aColor; vT=0.55+0.45*sin(uTime*(0.5+aPhase*0.9)+aPhase*6.2831);
+      void main(){ vC=aColor; vT=0.5+0.5*sin(uTime*(0.6+aPhase*1.6)+aPhase*6.2831);
         vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=min(aSize*uPR*(14000.0/-mv.z), 9.0*uPR); gl_Position=projectionMatrix*mv; }`,
     fragmentShader: `varying vec3 vC; varying float vT;
       void main(){ float d=length(gl_PointCoord-0.5); float a=smoothstep(0.5,0.0,d); gl_FragColor=vec4(vC, a*a*vT*0.9); }`,
     transparent: true, depthWrite: false, blending: T.AdditiveBlending});
-  scene.add(new T.Points(starGeo, starMat));
+  const bg = new T.Group(); scene.add(bg);  // the far sky: turns slowly in the render loop
+  bg.add(new T.Points(starGeo, starMat));
   [[TH.deep, 1], [TH.panel, 1], [TH.secondary, .6], [TH.accent, .35], [TH.deep, .8], [TH.panel, .9], [TH.secondary, .5]].forEach(([c, o], i) => {
     const r = rng(40 + i), u = r() * 1.4 - .7, th = r() * Math.PI * 2, d = 16000;
     const s = new T.Sprite(new T.SpriteMaterial({map: nebTex, color: new T.Color(c), transparent: true, opacity: .4 * o, depthWrite: false, blending: T.AdditiveBlending}));
-    s.position.set(Math.cos(th) * Math.sqrt(1-u*u) * d, u * d * .6, Math.sin(th) * Math.sqrt(1-u*u) * d); s.scale.setScalar(9000 + r() * 9000); scene.add(s);
+    s.position.set(Math.cos(th) * Math.sqrt(1-u*u) * d, u * d * .6, Math.sin(th) * Math.sqrt(1-u*u) * d); s.scale.setScalar(9000 + r() * 9000); bg.add(s);
   });
 
   function makeStar(color, size, spike = false, tip = '') {
@@ -452,8 +453,30 @@ function init3D() {
     return {p, outer, inner, labels, picks, i};
   });
 
-  return {T, renderer, scene, cam, TAN, starMat, pStars, skyPos, famPos, skyEdges, famEdges, skyLines, famLines, pale, famCol, famCtr,
+  // shooting stars: a short additive streak in camera space, so one crosses the view whatever slide is showing
+  const meteorGeo = new T.BufferGeometry();
+  meteorGeo.setAttribute('position', new T.BufferAttribute(new Float32Array(6), 3));
+  meteorGeo.setAttribute('color', new T.BufferAttribute(new Float32Array([1, .95, .85, 0, 0, 0]), 3));
+  const meteor = new T.Line(meteorGeo, new T.LineBasicMaterial({vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false}));
+  meteor.visible = false; meteor.frustumCulled = false; cam.add(meteor);
+  const meteorState = {next: 3 + Math.random() * 4, t: 0, from: new T.Vector3(), vel: new T.Vector3()};
+
+  return {T, renderer, scene, cam, TAN, starMat, bg, meteor, meteorGeo, meteorState, pStars, skyPos, famPos, skyEdges, famEdges, skyLines, famLines, pale, famCol, famCtr,
           SKY, CG, AG, chLabels, chPicks, chW, chH, atLabels, atPicks, atW, atH, consts, starColor, spread};
+}
+function updateMeteor(dt, tm) {
+  const M = G.meteorState, d = 2000, hh = d * G.TAN, hw = hh * G.cam.aspect;  // camera space, 2000 units ahead
+  if (!G.meteor.visible) {
+    if (tm < M.next) return;
+    M.from.set((Math.random() * 1.2 - .2) * hw, (.2 + Math.random() * .7) * hh, -d);
+    M.vel.set(-(.9 + Math.random() * .8) * hw, -(.35 + Math.random() * .35) * hh, 0);
+    M.t = 0; G.meteor.visible = true; return;
+  }
+  M.t += dt; const k = M.t / .9;
+  if (k >= 1) { G.meteor.visible = false; M.next = tm + 5 + Math.random() * 8; return; }
+  const head = M.from.clone().addScaledVector(M.vel, M.t), tail = head.clone().addScaledVector(M.vel, -.12 * Math.sin(Math.PI * k) - .01);
+  const pa = G.meteorGeo.attributes.position; pa.setXYZ(0, head.x, head.y, head.z); pa.setXYZ(1, tail.x, tail.y, tail.z); pa.needsUpdate = true;
+  G.meteor.material.opacity = Math.sin(Math.PI * k);
 }
 function setLinesFn(ls, pts, edges) {
   const a = ls.geometry.attributes.position.array;
@@ -853,6 +876,7 @@ function tick(now) {
     setLinesFn(G.skyLines, cpos, G.skyEdges); if (G.famEdges.length) setLinesFn(G.famLines, cpos, G.famEdges); lastM = m;
   }
   if (!reduce) for (const c of G.consts) if (c) c.inner.rotation.y = Math.sin(tm * .22 + c.i) * .24;
+  if (!reduce) { G.bg.rotation.y = tm * .008; G.bg.rotation.x = Math.sin(tm * .021) * .03; updateMeteor(dt, tm); }
   G.renderer.render(G.scene, G.cam);
   updateLabels(show);
   if (picks.length && mouse.cx >= 0 && !fly) {
