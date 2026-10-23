@@ -1,0 +1,8 @@
+fold,model,n_rows,n_rows_scored,p@1,r@3,ndcg@3,mean_candidates,mask_violation_pct,group_share,customer_share,within_group_auc_fx
+train,catboost,1240000,1153200,0.512,0.846,0.712,4.6,0.5,0.412,0.468,0.713
+test,catboost,310000,288300,0.497,0.838,0.703,4.6,0.8,0.412,0.468,0.694
+oot,catboost,286000,265980,0.481,0.829,0.694,4.6,0.8,0.412,0.468,0.671
+oot,group_baseline,286000,265980,0.402,0.758,0.631,,,,,
+oot,popularity,286000,265980,0.318,0.682,0.564,,,,,
+oot,catboost_avg_group,286000,265980,0.436,0.788,0.658,,,,,
+oot,catboost_residual,286000,265980,0.291,0.658,0.542,,,,,

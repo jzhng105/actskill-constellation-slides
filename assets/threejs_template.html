@@ -1,0 +1,878 @@
+<meta charset="utf-8">
+<title>__TITLE__</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="__FONTS_HREF__">
+<style>
+/* Layout: full-bleed WebGL night sky in the theme colours (assets/theme.json, injected as __THEME_CSS__ below); brand header with logo on top, nav bar at the bottom, one HTML panel per slide (left column or centred). Single dark look by design (Night section style, white type). */
+:root{
+  --bg:#080c1f;          /* Night */
+  --brand:#0c1128;       /* Glass (panels) */
+  --blue2:#3a44a0;       /* Deep nebula */
+  --lblue:#7c8cff;       /* Nebula */
+  --accent:#ffd36e;      /* Star */
+  --white:#ffffff;
+  --soft:#a9b3d6;        /* Ink soft: secondary text on dark */
+  --mute:#6b7499;        /* Ink faint: captions on dark */
+  --good:#4fd1a1;        /* Aurora Green: positive state only */
+  --panel:rgba(var(--panel-rgb),.78);
+  --edge:rgba(var(--line-rgb),.22);
+  --paper:#ffffff; --ink:#404040;
+  --head:'Sora', Arial, Helvetica, sans-serif;
+  --body:'Inter', Arial, Helvetica, sans-serif;
+  --top:68px; --bar:64px;
+  --bg-rgb:8,12,31; --panel-rgb:12,17,40; --accent-rgb:255,211,110; --line-rgb:160,175,255;
+  color-scheme:dark;
+}
+__THEME_CSS__
+html,body{height:100%}
+body{background:var(--bg);color:var(--white);font-family:var(--body);font-size:16px;overflow:hidden}
+body.no-gl{background:radial-gradient(ellipse at 75% 25%, var(--blue2) 0%, var(--brand) 40%, var(--bg) 80%)}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+#scrim{position:fixed;inset:0;pointer-events:none;transition:opacity .9s ease;
+  background:linear-gradient(90deg, rgba(var(--bg-rgb),.92) 0%, rgba(var(--bg-rgb),.66) 34%, rgba(var(--bg-rgb),0) 60%)}
+#scrim2{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .9s ease;
+  background:radial-gradient(ellipse at 50% 55%, rgba(var(--bg-rgb),.55) 0%, rgba(var(--bg-rgb),.9) 75%)}
+body[data-layout="wide"] #scrim{opacity:0}
+body[data-layout="wide"] #scrim2{opacity:1}
+
+#top{position:fixed;left:0;right:0;top:0;height:calc(var(--top) + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) clamp(16px,3vw,40px) 0;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:5;
+  background:linear-gradient(180deg, rgba(var(--panel-rgb),.96) 0%, rgba(var(--panel-rgb),.7) 70%, rgba(var(--panel-rgb),0) 100%)}
+#top img{height:60px;width:auto;display:block;margin-left:-10px}
+#top .prod{font:600 12px/1.3 var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--soft);text-align:right}
+#top .prod b{color:var(--white);font-weight:700}
+
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;white-space:nowrap;font:600 13.5px/1.25 var(--body);color:var(--white);
+  opacity:0;transition:opacity .5s ease;will-change:transform;
+  text-shadow:0 0 6px rgba(var(--bg-rgb),.95),0 0 2px rgba(var(--bg-rgb),1)}
+.lb.on{opacity:1}
+.lb small{display:block;color:var(--soft);font-size:12px;font-weight:400}
+.lb.hl{color:var(--accent)}
+.lb.head{font:700 11.5px/1.2 var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--soft)}
+.lb.fam{font:700 18px/1.2 var(--head)}
+.lb.rot{transform-origin:0 50%;font-size:12.5px;color:var(--soft)}
+.lb.big{font:700 16px/1.2 var(--head)}
+
+#stage{position:fixed;inset:var(--top) 0 var(--bar) 0;pointer-events:none}
+.panel{position:absolute;pointer-events:auto;display:flex;flex-direction:column;gap:18px;
+  transition:opacity .5s ease, transform .6s cubic-bezier(.2,.7,.2,1)}
+.panel.enter{opacity:0;transform:translateY(16px)}
+.panel.leave{opacity:0;transform:translateY(-12px);pointer-events:none}
+/* safety net: some viewers freeze CSS transitions/animations mid-way; .settled pins the final state */
+.panel.settled{opacity:1!important;transform:none!important;transition:none!important}
+.panel.settled .track i,.panel.settled .stack div{animation:none!important;transform:none!important}
+.panel.left{left:clamp(16px,4vw,64px);top:50%;translate:0 -50%;width:min(540px,40vw);max-height:calc(100% - 24px);overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;padding-right:6px}
+.panel>*{min-width:0}
+.panel.wide{left:50%;top:50%;translate:-50% -50%;width:min(1180px,calc(100vw - 32px));max-height:calc(100% - 24px);overflow:auto;scrollbar-width:thin}
+
+.eyebrow{font:700 12px/1.4 var(--head);letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.hero{font:700 clamp(34px,5vw,80px)/1 var(--head);letter-spacing:-.015em;overflow-wrap:anywhere}
+h2{font:700 clamp(28px,3.3vw,46px)/1.1 var(--head);text-wrap:balance;letter-spacing:-.01em}
+h3{font:600 clamp(18px,1.5vw,22px)/1.25 var(--head)}
+.lede{font:600 clamp(20px,2vw,28px)/1.3 var(--head);color:var(--accent);text-wrap:balance}
+.panel p,.panel li{font-size:clamp(15px,1.15vw,17.5px);line-height:1.55;color:var(--soft);max-width:62ch}
+.panel p b,.panel li b{color:var(--white);font-weight:700}
+.src{font-size:12.5px!important;line-height:1.45!important;color:var(--mute)!important}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.hint{font-size:12.5px;color:var(--mute)}
+.hl{color:var(--accent)}
+.good{color:var(--good);font-weight:700}
+.code{font-family:Consolas,'Courier New',monospace;font-size:.92em}
+
+.btn{font:700 14px/1 var(--head);color:var(--bg);background:var(--accent);border:0;border-radius:999px;padding:13px 20px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--white);border:1px solid var(--edge)}
+.btn:hover{filter:brightness(1.08)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:10px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);min-width:0}
+.step{font:700 13px/1 var(--head);color:var(--bg);background:var(--accent);width:30px;height:30px;border-radius:50%;display:grid;place-items:center}
+.big{font:700 clamp(40px,4.4vw,64px)/1 var(--head);color:var(--white);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.big.hl{color:var(--accent)}
+.kv{display:flex;justify-content:space-between;gap:12px;font-size:15px;color:var(--white);border-top:1px solid var(--edge);padding-top:8px}
+.kv span:last-child{font-variant-numeric:tabular-nums;font-weight:600}
+
+.insight{border-left:3px solid var(--accent);padding-left:16px;display:flex;flex-direction:column;gap:2px}
+.insight .eyebrow{font-size:11px}
+.insight p{color:var(--white)!important}
+
+.steps{display:flex;flex-direction:column;gap:16px}
+.steps .s{display:grid;grid-template-columns:30px minmax(0,1fr);gap:14px;align-items:start}
+.steps .s p{margin-top:2px}
+
+.split{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:36px;align-items:center}
+.bars{display:flex;flex-direction:column;gap:16px}
+.bars .r{display:grid;grid-template-columns:minmax(140px,240px) minmax(0,1fr) 70px;align-items:center;gap:14px;font-size:15.5px}
+.bars .lab{color:var(--white);line-height:1.3}
+.bars .lab small{display:block;color:var(--mute);font-size:12.5px}
+.track{height:18px;background:rgba(var(--line-rgb),.1);border-radius:0 9px 9px 0}
+.track i{display:block;height:100%;width:var(--w);border-radius:0 9px 9px 0;background:var(--blue2);transform-origin:left;animation:grow 1.1s cubic-bezier(.2,.7,.2,1) both}
+.track i.hl{background:var(--accent)} .track i.mid{background:var(--lblue)}
+.bars .v{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;font-family:var(--head)}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+.tblwrap{overflow-x:auto;background:var(--panel);border:1px solid var(--edge);border-radius:12px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+table{width:100%;border-collapse:collapse;font-size:15px;font-variant-numeric:tabular-nums}
+th,td{padding:11px 14px;border-bottom:1px solid var(--edge);text-align:right;white-space:nowrap}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+tr:last-child td{border-bottom:0}
+th{font:700 11.5px/1.3 var(--head);letter-spacing:.1em;text-transform:uppercase;color:var(--soft)}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+th button:focus-visible{outline:2px solid var(--accent)}
+th[aria-sort] button::after{content:"▾";color:var(--accent)}
+th[aria-sort="ascending"] button::after{content:"▴"}
+td.top{color:var(--accent);font-weight:700}
+.grade{display:inline-block;min-width:78px;text-align:center;font:700 11.5px/1 var(--head);letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-radius:999px;border:1px solid var(--edge);color:var(--soft)}
+.grade.g4{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.grade.g3{background:var(--blue2);color:var(--white);border-color:var(--blue2)}
+.grade.g2{background:transparent;color:var(--white)}
+
+.stack{display:flex;height:56px;border-radius:10px;overflow:hidden}
+.stack div{flex:0 0 var(--w);display:flex;flex-direction:column;justify-content:center;padding:0 14px;font:700 14px/1.2 var(--head);white-space:nowrap;overflow:hidden;animation:grow 1.1s cubic-bezier(.2,.7,.2,1) both;transform-origin:left}
+.stack div small{font:400 12px/1.2 var(--body)}
+.stack .d{background:var(--accent);color:var(--bg)} .stack .c{background:var(--white);color:var(--brand)} .stack .x{background:var(--mute);color:var(--bg);align-items:center;padding:0}
+
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.kpi{border:1px solid var(--edge);border-radius:10px;padding:12px 14px;background:rgba(var(--panel-rgb),.6);display:flex;flex-direction:column;gap:3px;min-width:0}
+.kpi span{font-size:12.5px;color:var(--soft);line-height:1.3}
+.kpi b{font:700 22px/1.15 var(--head);color:var(--white);font-variant-numeric:tabular-nums}
+.kpi em{font-style:normal;font-size:12.5px;color:var(--accent);font-weight:700}
+.flist{display:flex;flex-direction:column;gap:8px}
+.flist .r{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr) 54px;gap:12px;align-items:center;font-size:14px;color:var(--white)}
+.flist .r span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flist .r span:last-child{text-align:right;color:var(--soft);font-variant-numeric:tabular-nums;font-weight:600}
+.flist .track{height:10px;border-radius:0 5px 5px 0}
+.ticks{list-style:none;display:flex;flex-direction:column;gap:6px}
+.ticks li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;color:var(--white)!important}
+.ticks li::before{content:"▲";color:var(--accent);font-size:11px;line-height:1.9}
+
+.fam{display:grid;grid-template-columns:14px minmax(0,1fr);gap:14px;align-items:start}
+.fam .dot{width:12px;height:12px;border-radius:50%;margin-top:5px;background:currentColor;box-shadow:0 0 10px currentColor}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--soft)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{width:10px;height:10px;border-radius:50%;background:var(--white)}
+.legend i.hl{background:var(--accent)}
+
+.take{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px}
+.take .n{font:700 26px/1.1 var(--head);color:var(--accent)}
+.next{border:1px solid var(--accent);border-radius:12px;padding:18px 20px;background:rgba(var(--accent-rgb),.08);display:flex;flex-direction:column;gap:6px}
+
+#bar{position:fixed;left:0;right:0;bottom:0;height:calc(var(--bar) + env(safe-area-inset-bottom,0px));padding:0 clamp(16px,3vw,40px) env(safe-area-inset-bottom,0px);
+  display:flex;align-items:center;gap:18px;background:linear-gradient(0deg, rgba(var(--bg-rgb),.96) 30%, rgba(var(--bg-rgb),0));z-index:5}
+#sec{font:700 11.5px/1.2 var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 240px;min-width:0}
+#ticks{flex:1;display:flex;gap:3px;align-items:center;min-width:0}
+#ticks button{flex:1;height:20px;padding:0;background:none;border:0;cursor:pointer;position:relative;min-width:4px}
+#ticks button::after{content:"";position:absolute;left:0;right:0;top:9px;height:2px;border-radius:2px;background:rgba(var(--line-rgb),.25);transition:background .3s}
+#ticks button.done::after{background:rgba(var(--accent-rgb),.55)}
+#ticks button.cur::after{background:var(--accent);height:4px;top:8px}
+#count{font:600 13px/1 var(--head);color:var(--soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ib{width:38px;height:38px;border-radius:50%;border:1px solid var(--edge);background:rgba(var(--panel-rgb),.7);color:var(--white);display:grid;place-items:center;cursor:pointer;flex:none}
+.ib:hover{border-color:var(--accent)}
+.ib svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+
+#tip{position:fixed;left:0;top:0;pointer-events:none;z-index:7;font:13px/1.45 var(--body);color:var(--white);background:rgba(var(--panel-rgb),.95);border:1px solid var(--edge);border-radius:8px;padding:8px 11px;white-space:nowrap}
+#tip b{color:var(--accent)}
+
+#drawer{position:fixed;top:0;right:0;bottom:var(--bar);width:min(500px,100vw);background:var(--paper);color:var(--ink);z-index:6;
+  display:flex;flex-direction:column;gap:10px;padding:16px;box-shadow:-24px 0 60px rgba(0,0,0,.5);
+  transform:translateX(105%);visibility:hidden;transition:transform .5s cubic-bezier(.2,.7,.2,1), visibility 0s .5s}
+#drawer.open{transform:none;visibility:visible;transition:transform .5s cubic-bezier(.2,.7,.2,1)}
+#drawer header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#drawer h3{color:var(--brand)}
+#drawer p{font-size:13.5px;line-height:1.5;color:var(--ink)}
+#drawer .ib{background:transparent;color:var(--brand);border-color:rgba(var(--panel-rgb),.3)}
+#drawer img{flex:1;min-height:0;width:100%;object-fit:contain}
+#notes{position:fixed;left:clamp(16px,3vw,40px);bottom:calc(var(--bar) + 8px);width:min(640px,calc(100vw - 32px));max-height:40vh;overflow:auto;z-index:6;
+  background:rgba(var(--panel-rgb),.97);border:1px solid var(--edge);border-radius:12px;padding:16px 18px;font-size:14.5px;line-height:1.55;color:var(--soft);
+  opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .3s, transform .3s}
+#notes.open{opacity:1;transform:none;pointer-events:auto}
+#notes .eyebrow{margin-bottom:6px}
+
+@media (max-width:760px){
+  :root{--top:56px}
+  #top img{height:48px}
+  #top .prod{display:none}
+  .panel.left{left:16px;right:16px;width:auto;top:auto;bottom:8px;translate:none;max-height:56%;background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:16px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .panel.wide{top:8px;translate:-50% 0;max-height:calc(100% - 16px)}
+  #scrim{background:linear-gradient(0deg, rgba(var(--bg-rgb),.88) 0%, rgba(var(--bg-rgb),0) 55%)}
+  #sec{display:none}
+  .split{grid-template-columns:1fr;gap:22px}
+  .bars .r{grid-template-columns:120px minmax(0,1fr) 56px;font-size:14px}
+  .kpis{grid-template-columns:1fr 1fr}
+  .lb{font-size:11.5px} .lb small{font-size:10.5px} .lb.fam{font-size:14px} .lb.rot{font-size:10.5px}
+}
+@media (prefers-reduced-motion: reduce){
+  .panel,.lb,#drawer,#notes{transition:none!important}
+  .track i,.stack div{animation:none}
+}
+</style>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+<div id="scrim"></div>
+<div id="scrim2"></div>
+<div id="labels" aria-hidden="true"></div>
+<header id="top"><img src="__LOGO__" alt="__LOGO_ALT__"><div class="prod" id="brandtag"></div></header>
+<main id="stage" aria-live="polite"></main>
+<div id="tip" hidden></div>
+<aside id="drawer" aria-label="SHAP beeswarm">
+  <header><h3 id="dtitle">SHAP beeswarm</h3><button class="ib" id="dclose" aria-label="Close chart"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+  <p id="dnote"></p>
+  <img id="dimg" alt="">
+</aside>
+<aside id="notes" aria-label="Speaker notes"><p class="eyebrow">Speaker notes</p><div id="ntext"></div></aside>
+<nav id="bar" aria-label="Slides">
+  <div id="sec"></div>
+  <div id="ticks"></div>
+  <span id="count"></span>
+  <button class="ib" id="prev" aria-label="Previous slide"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <button class="ib" id="next" aria-label="Next slide"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+  <button class="ib" id="ntog" aria-label="Speaker notes" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/></svg></button>
+  <button class="ib" id="fs" aria-label="Full screen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>const D = __DATA__;</script>
+<script>
+(() => {
+'use strict';
+/* ---------------------------------------------------------------- data */
+const P = D.products, M = D.metrics, FN = D.featureNames, ST = D.story || {}, TH = D.theme.colors;
+const EX = D.audience !== 'analyst';                       // exec = plain language; analyst = metric names and raw values
+const MF = M[D.fold] || {};
+const cb = MF.catboost, gb = MF.group_baseline, pp = MF.popularity, avg = MF.catboost_avg_group, res = MF.catboost_residual;
+const FAMS = D.families.map(f => f.name), FAM = Object.fromEntries(D.families.map(f => [f.name, f]));
+const SEG = D.segments;
+const hasPL = P.every(p => p.oot), hasWD = P.every(p => p.wd), hasShap = P.every(p => p.share && p.share.length);
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const f1 = v => v.toFixed(1), f3 = v => v.toFixed(3), pc0 = v => Math.round(v * 100) + '%', pc = v => (v * 100).toFixed(1) + '%';
+const int = v => Math.round(v).toLocaleString('en-US');
+const k000 = v => Math.round(v / 1000).toLocaleString('en-US') + ',000';
+const fname = f => EX ? (FN[f] || f) : f;
+const fnameHtml = f => EX ? esc(FN[f] || f) : `<span class="code">${esc(f)}</span>`;
+const score = a => Math.round(a * 100);
+const grade = a => { const s = score(a); return s >= 90 ? ['Excellent', 'g4'] : s >= 80 ? ['Strong', 'g3'] : s >= 70 ? ['Good', 'g2'] : ['Fair', 'g1']; };
+const gradeTag = a => { const [t, c] = grade(a); return `<span class="grade ${c}">${t}</span>`; };
+const t = (ex, an) => EX ? ex : an;
+const FOLDN = {train: t('Customers it learned from', 'Train'), test: t('Held-back customers', 'Test (held out)'), oot: t('Newer customers', 'Out-of-time')};
+const FOLDS = D.folds.filter(f => M[f] && M[f].catboost);
+const headlineFold = t(D.fold === 'oot' ? 'newer customers the model had never seen' : 'held-back customers', `fold = ${D.fold}`);
+const segName = c => (SEG.find(x => x[0] === c) || [c, c])[1];
+
+function rng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let x = Math.imul(a ^ a >>> 15, 1 | a); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; }; }
+const strSeed = s => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+
+/* ------------------------------------------------------------------ 3D */
+let G = null;
+function init3D() {
+  const T = THREE;
+  const renderer = new T.WebGLRenderer({canvas: $('#gl'), antialias: true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.setClearColor(TH.bg, 1);
+  const scene = new T.Scene();
+  const cam = new T.PerspectiveCamera(50, 1, 1, 60000);
+  const TAN = Math.tan(T.MathUtils.degToRad(25));
+
+  const tex = (size, draw) => { const c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size); return new T.CanvasTexture(c); };
+  const glowTex = tex(128, (g, s) => { const r = g.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+    r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.16, 'rgba(255,255,255,.9)'); r.addColorStop(.42, 'rgba(255,255,255,.22)'); r.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = r; g.fillRect(0, 0, s, s); });
+  const spikeTex = tex(256, (g, s) => { g.translate(s/2, s/2); for (const a of [0, Math.PI/2]) { g.save(); g.rotate(a);
+    const lg = g.createLinearGradient(-s/2, 0, s/2, 0); lg.addColorStop(0, 'rgba(255,255,255,0)'); lg.addColorStop(.5, 'rgba(255,255,255,.95)'); lg.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = lg; g.fillRect(-s/2, -1.6, s, 3.2); g.restore(); } });
+  const nebTex = tex(256, (g, s) => { const r = g.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+    r.addColorStop(0, 'rgba(255,255,255,.55)'); r.addColorStop(.5, 'rgba(255,255,255,.16)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, s, s); });
+
+  // twinkling starfield: a milky band plus a full shell, tinted with the theme colours
+  const N = 6500, pos = new Float32Array(N*3), col = new Float32Array(N*3), siz = new Float32Array(N), ph = new Float32Array(N);
+  const R = rng(3), tint = [new T.Color('#ffffff'), new T.Color(TH.soft), new T.Color(TH.accent), new T.Color(TH.mute)];
+  for (let i = 0; i < N; i++) {
+    let v;
+    if (i < N * .5) { const th = R() * Math.PI * 2, r = 9000 + R() * 9000, y = (R() + R() + R() - 1.5) * 1400;
+      v = new T.Vector3(Math.cos(th) * r, y, Math.sin(th) * r).applyAxisAngle(new T.Vector3(0, 0, 1), .42); }
+    else { const u = R() * 2 - 1, th = R() * Math.PI * 2, r = 9000 + R() * 12000, s = Math.sqrt(1 - u*u);
+      v = new T.Vector3(s * Math.cos(th) * r, u * r, s * Math.sin(th) * r); }
+    pos.set([v.x, v.y, v.z], i*3);
+    const c = tint[R() < .7 ? 0 : 1 + Math.floor(R() * 3)]; col.set([c.r, c.g, c.b], i*3);
+    siz[i] = R() < .04 ? 4 + R() * 3 : 1.2 + R() * 2.2; ph[i] = R();
+  }
+  const starGeo = new T.BufferGeometry();
+  starGeo.setAttribute('position', new T.BufferAttribute(pos, 3)); starGeo.setAttribute('aColor', new T.BufferAttribute(col, 3));
+  starGeo.setAttribute('aSize', new T.BufferAttribute(siz, 1)); starGeo.setAttribute('aPhase', new T.BufferAttribute(ph, 1));
+  const starMat = new T.ShaderMaterial({
+    uniforms: {uTime: {value: 0}, uPR: {value: renderer.getPixelRatio()}},
+    vertexShader: `attribute vec3 aColor; attribute float aSize; attribute float aPhase; uniform float uTime; uniform float uPR;
+      varying vec3 vC; varying float vT;
+      void main(){ vC=aColor; vT=0.55+0.45*sin(uTime*(0.5+aPhase*0.9)+aPhase*6.2831);
+        vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=min(aSize*uPR*(14000.0/-mv.z), 9.0*uPR); gl_Position=projectionMatrix*mv; }`,
+    fragmentShader: `varying vec3 vC; varying float vT;
+      void main(){ float d=length(gl_PointCoord-0.5); float a=smoothstep(0.5,0.0,d); gl_FragColor=vec4(vC, a*a*vT*0.9); }`,
+    transparent: true, depthWrite: false, blending: T.AdditiveBlending});
+  scene.add(new T.Points(starGeo, starMat));
+  [[TH.deep, 1], [TH.panel, 1], [TH.secondary, .6], [TH.accent, .35], [TH.deep, .8], [TH.panel, .9], [TH.secondary, .5]].forEach(([c, o], i) => {
+    const r = rng(40 + i), u = r() * 1.4 - .7, th = r() * Math.PI * 2, d = 16000;
+    const s = new T.Sprite(new T.SpriteMaterial({map: nebTex, color: new T.Color(c), transparent: true, opacity: .4 * o, depthWrite: false, blending: T.AdditiveBlending}));
+    s.position.set(Math.cos(th) * Math.sqrt(1-u*u) * d, u * d * .6, Math.sin(th) * Math.sqrt(1-u*u) * d); s.scale.setScalar(9000 + r() * 9000); scene.add(s);
+  });
+
+  function makeStar(color, size, spike = false, tip = '') {
+    const g = new T.Group(), c = new T.Color(color);
+    const mk = (map, sc, op) => { const s = new T.Sprite(new T.SpriteMaterial({map, color: c.clone(), transparent: true, opacity: op, depthWrite: false, blending: T.AdditiveBlending})); s.scale.setScalar(sc); g.add(s); return s; };
+    const halo = mk(glowTex, size * 3.4, .3), core = mk(glowTex, size, 1), sp = spike ? mk(spikeTex, size * 4.4, .75) : null;
+    core.userData.tip = tip;
+    g.userData = {halo, core, sp, size};
+    return g;
+  }
+  const starColor = (g, c) => { for (const s of [g.userData.halo, g.userData.core, g.userData.sp]) if (s) s.material.color.copy(c); };
+  function makeLines(nEdges, color = TH.accent, op = .4) {
+    const geo = new T.BufferGeometry(); geo.setAttribute('position', new T.BufferAttribute(new Float32Array(Math.max(nEdges, 1) * 6), 3));
+    return new T.LineSegments(geo, new T.LineBasicMaterial({color, transparent: true, opacity: op, depthWrite: false, blending: T.AdditiveBlending}));
+  }
+  function mst(pts) {
+    const used = new Set([0]), e = [];
+    while (used.size < pts.length) { let best = null;
+      for (const a of used) for (let b = 0; b < pts.length; b++) { if (used.has(b)) continue; const d = pts[a].distanceTo(pts[b]); if (!best || d < best[0]) best = [d, a, b]; }
+      used.add(best[2]); e.push([best[1], best[2]]); }
+    return e;
+  }
+  function addLoop(pts, e) {
+    let best = null;
+    for (let a = 0; a < pts.length; a++) for (let b = a + 1; b < pts.length; b++) {
+      if (e.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) continue;
+      const d = pts[a].distanceTo(pts[b]); if (!best || d < best[0]) best = [d, a, b]; }
+    if (best) e.push([best[1], best[2]]); return e;
+  }
+  function scatter(n, seed, ext, ok) {
+    const r = rng(seed); let pts = [], tries = 0;
+    while (pts.length < n && tries < 20000) { tries++;
+      const v = new T.Vector3((r()*2-1) * ext[0], (r()*2-1) * ext[1], (r()*2-1) * ext[2]);
+      if (pts.every(q => ok(q, v))) pts.push(v);
+      if (tries % 4000 === 0 && pts.length < n) pts = []; }
+    while (pts.length < n) pts.push(new T.Vector3((r()*2-1) * ext[0], (r()*2-1) * ext[1], 0));
+    return pts;
+  }
+
+  /* the products as one constellation (cover, overview, families) */
+  const SKY = new T.Vector3(0, 0, 0);
+  const skyG = new T.Group(); scene.add(skyG);
+  const weight = p => p.oot ? p.oot.n_pos : Math.max(...SEG.map(([c]) => p.rate[c]));
+  const maxW = Math.max(...P.map(weight));
+  const spread = Math.sqrt(P.length / 10);
+  const skyPos = scatter(P.length, 7, [250 * spread, 150 * spread, 110], (q, v) => q.distanceTo(v) > 100 && (Math.abs(q.x - v.x) > 165 || Math.abs(q.y - v.y) > 42));
+  const nF = FAMS.length, cols = nF <= 4 ? 2 : 3, rows = Math.ceil(nF / cols);
+  const famCtr = Object.fromEntries(FAMS.map((f, i) => [f, new T.Vector3(((i % cols) - (cols - 1) / 2) * 450, ((rows - 1) / 2 - Math.floor(i / cols)) * 205, 0)]));
+  const famPos = P.map(p => { const mem = P.filter(q => q.family === p.family), j = mem.indexOf(p), n = mem.length;
+    const o = n === 1 ? [0, 0] : n === 2 ? [[-50, 22], [50, -22]][j] : [Math.cos(j / n * Math.PI * 2 + .5) * 62, Math.sin(j / n * Math.PI * 2 + .5) * 44];
+    return famCtr[p.family].clone().add(new T.Vector3(o[0], o[1], 0)); });
+  const topIdx = P.findIndex(p => weight(p) === maxW);
+  const pStars = P.map((p, i) => { const s = makeStar('#ffffff', 14 + 30 * Math.sqrt(weight(p) / maxW), i === topIdx,
+    p.oot ? t(`<b>${esc(p.short)}</b> · bought by ${f1(p.oot.pos_rate)}% of eligible customers`, `<b>${esc(p.short)}</b> · ${int(p.oot.n_pos)} positives · ${f1(p.oot.pos_rate)}% uptake (${D.fold})`) : `<b>${esc(p.short)}</b>`);
+    s.position.copy(skyPos[i]); skyG.add(s); return s; });
+  const skyEdges = addLoop(skyPos, mst(skyPos));
+  const famEdges = [];
+  FAMS.forEach(f => { const idx = P.map((p, i) => p.family === f ? i : -1).filter(i => i >= 0); if (idx.length < 2) return;
+    const sub = idx.map(i => famPos[i]); mst(sub).forEach(([a, b]) => famEdges.push([idx[a], idx[b]])); if (idx.length >= 3) famEdges.push([idx[0], idx[idx.length - 1]]); });
+  const skyLines = makeLines(skyEdges.length), famLines = makeLines(famEdges.length, 0xffffff, 0);
+  skyG.add(skyLines, famLines);
+  const pale = new T.Color('#ffffff'), famCol = P.map(p => new T.Color(FAM[p.family].color));
+
+  /* customer-type grid */
+  const CG = new T.Vector3(0, 1250, -300);
+  const chG = new T.Group(); chG.position.copy(CG); scene.add(chG);
+  const maxRate = Math.max(...P.flatMap(p => SEG.map(([c]) => p.rate[c])));
+  const nC = SEG.length, RHc = 46, CWc = 135;
+  const chLabels = [], chPicks = [], rowPts = [], rowEdges = [];
+  P.forEach((p, r) => {
+    const vals = SEG.map(([c]) => p.rate[c]), peak = Math.max(...vals), y = ((P.length - 1) / 2 - r) * RHc;
+    SEG.forEach(([c, name], ci) => {
+      const v = p.rate[c], x = (ci - (nC - 1) / 2) * CWc, size = v > 0 ? 6 + 36 * Math.sqrt(v / maxRate) : 3, isPeak = v === peak;
+      const s = makeStar(isPeak ? TH.accent : TH.soft, size, false, t(`<b>${esc(p.short)}</b> · ${name} customers · bought ${f1(v)}% of the time`, `<b>${esc(p.short)}</b> · ${name} · uptake ${f1(v)}%`));
+      s.position.set(x, y, 0); chG.add(s); chPicks.push(s.userData.core); rowPts.push(new T.Vector3(x, y, 0));
+      chLabels.push({local: new T.Vector3(x + size * .55, y, 0), host: chG, a: 'r', html: `${f1(v)}%`, cls: isPeak ? 'hl' : ''});
+    });
+    for (let ci = 0; ci < nC - 1; ci++) rowEdges.push([r * nC + ci, r * nC + ci + 1]);
+    chLabels.push({local: new T.Vector3(-((nC - 1) / 2) * CWc - 70, y, 0), host: chG, a: 'l', html: esc(p.short), cls: ''});
+  });
+  const rowLines = makeLines(Math.max(rowEdges.length, 1), TH.mute, .25); chG.add(rowLines); if (rowEdges.length) setLinesFn(rowLines, rowPts, rowEdges);
+  SEG.forEach(([, name], ci) => chLabels.push({local: new T.Vector3((ci - (nC - 1) / 2) * CWc, ((P.length - 1) / 2) * RHc + 52, 0), host: chG, a: 'c', html: t(name + ' customers', name), cls: 'head'}));
+  const chW = nC * CWc + 260, chH = P.length * RHc + 100;
+
+  /* driver map: features x products */
+  const AG = new T.Vector3(0, -1250, -300);
+  const atG = new T.Group(); atG.position.copy(AG); scene.add(atG);
+  const feats = D.atlas, CW = 70, RH = 40, NR = feats.length, NP = P.length, cx = c => (c - (NP - 1) / 2) * CW;
+  const atLabels = [], atPicks = [];
+  if (hasShap) {
+    const vmax = Math.max(...P.map(p => p.share[0][1]));
+    P.forEach((p, c) => {
+      const sv = Object.fromEntries(p.share), rv = Object.fromEntries(p.raw || []), rank = Object.fromEntries(p.share.map(([f], i) => [f, i + 1])), top = p.share[0][0];
+      feats.forEach((f, r) => {
+        const v = sv[f] || 0, y = ((NR - 1) / 2 - r) * RH, isTop = f === top;
+        const s = makeStar(isTop ? TH.accent : TH.soft, 4 + 32 * Math.sqrt(v / vmax), isTop,
+          t(`<b>${esc(fname(f))}</b> · ${esc(p.short)} · ${pc0(v)} of the influence (#${rank[f] || '–'} signal)`,
+            `<b>${esc(f)}</b> · ${esc(p.short)} · mean |SHAP| ${rv[f] != null ? f3(rv[f]) : '0'} · ${pc(v)} share · rank ${rank[f] || '–'}`));
+        s.position.set(cx(c), y, 0); atG.add(s); atPicks.push(s.userData.core);
+      });
+      atLabels.push({local: new T.Vector3(cx(c) - 4, ((NR - 1) / 2) * RH + 30, 0), host: atG, a: 'rot', html: esc(p.short), cls: 'rot'});
+    });
+    feats.forEach((f, r) => atLabels.push({local: new T.Vector3(cx(0) - 40, ((NR - 1) / 2 - r) * RH, 0), host: atG, a: 'l', html: esc(fname(f)), cls: ''}));
+    const bounds = []; for (let c = 1; c < NP; c++) if (P[c].family !== P[c - 1].family) bounds.push(c);
+    const yTop = (NR / 2) * RH, yBot = -yTop;
+    if (bounds.length) { const sep = makeLines(bounds.length, TH.mute, .3); atG.add(sep);
+      setLinesFn(sep, bounds.flatMap(c => [new T.Vector3(cx(c) - CW / 2, yTop, 0), new T.Vector3(cx(c) - CW / 2, yBot, 0)]), bounds.map((_, k) => [2 * k, 2 * k + 1])); }
+    const starts = [0, ...bounds], ends = [...bounds.map(b => b - 1), NP - 1];
+    starts.forEach((s, k) => atLabels.push({local: new T.Vector3((cx(s) + cx(ends[k])) / 2, yBot - 16, 0), host: atG, a: 'below', html: esc(FAM[P[s].family].short), cls: 'head'}));
+  }
+  const atW = NP * CW + 260, atH = NR * RH + 130;
+
+  /* one constellation per product, on a ring around the sky */
+  const consts = P.map((p, i) => {
+    if (!p.share || !p.share.length) return null;
+    const th = i / P.length * Math.PI * 2 + .35, RR = 2300 * Math.max(1, P.length / 10);
+    const outer = new T.Group(); outer.position.set(Math.sin(th) * RR, Math.sin(i * 1.9) * 280, -Math.cos(th) * RR);
+    outer.lookAt(0, outer.position.y, 0); scene.add(outer);
+    const inner = new T.Group(); outer.add(inner);
+    const top = p.share.slice(0, EX ? 6 : 7), v1 = top[0][1], rv = Object.fromEntries(p.raw || []);
+    const pts = scatter(top.length, 100 + strSeed(p.key), [205, 120, 85], (q, v) => q.distanceTo(v) > 76 && (Math.abs(q.x - v.x) > 215 || Math.abs(q.y - v.y) > 48));
+    const labels = [], picks = [];
+    top.forEach(([f, v], k) => {
+      const size = 13 + 34 * Math.sqrt(v / v1);
+      const s = makeStar(k === 0 ? TH.accent : '#ffffff', size, k === 0,
+        t(`<b>${esc(fname(f))}</b> · ${pc0(v)} of what drives ${esc(p.short)}`, `<b>#${k + 1} ${esc(f)}</b> · mean |SHAP| ${f3(rv[f] || 0)} · ${pc(v)}`));
+      s.position.copy(pts[k]); inner.add(s); picks.push(s.userData.core);
+      const side = pts[k].x < 0 ? -1 : 1;
+      labels.push({local: pts[k].clone().add(new T.Vector3(side * size * .6, 0, 0)), host: inner, a: side < 0 ? 'l' : 'r',
+        html: t(`${esc(fname(f))}<small>${pc0(v)} of influence</small>`, `${esc(f)}<small>#${k + 1} · ${(rv[f] || 0).toFixed(2)} · ${pc0(v)}</small>`), cls: k === 0 ? 'hl' : ''});
+    });
+    const ls = makeLines(top.length + 1); setLinesFn(ls, pts, addLoop(pts, mst(pts))); inner.add(ls);
+    return {p, outer, inner, labels, picks, i};
+  });
+
+  return {T, renderer, scene, cam, TAN, starMat, pStars, skyPos, famPos, skyEdges, famEdges, skyLines, famLines, pale, famCol, famCtr,
+          SKY, CG, AG, chLabels, chPicks, chW, chH, atLabels, atPicks, atW, atH, consts, starColor, spread};
+}
+function setLinesFn(ls, pts, edges) {
+  const a = ls.geometry.attributes.position.array;
+  edges.forEach(([i, j], k) => a.set([pts[i].x, pts[i].y, pts[i].z, pts[j].x, pts[j].y, pts[j].z], k * 6));
+  ls.geometry.attributes.position.needsUpdate = true; ls.geometry.computeBoundingSphere();
+}
+
+/* -------------------------------------------------------- camera views */
+function layoutBox(layout) {
+  const W = innerWidth, H = innerHeight, mobile = W < 760;
+  if (layout === 'left') {
+    if (mobile) return {fw: .9, fh: .32, sx: 0, sy: H * .24};
+    const pr = Math.min(540, W * .4) + Math.max(16, W * .04) + 24;
+    return {fw: (W - pr - 56) / W, fh: .7, sx: -pr / 2, sy: 0};
+  }
+  return {fw: .9, fh: .75, sx: 0, sy: 0};
+}
+function fit(target, dir, w, h, layout) {
+  const T = G.T, b = layoutBox(layout), aspect = innerWidth / innerHeight;
+  const d = Math.max(w / (2 * G.TAN * aspect * b.fw), h / (2 * G.TAN * b.fh));
+  return {pos: target.clone().add(new T.Vector3(...dir).normalize().multiplyScalar(d)), tgt: target.clone(), sx: b.sx, sy: b.sy};
+}
+const fixed = (p, q) => () => ({pos: new G.T.Vector3(...p), tgt: new G.T.Vector3(...q), sx: 0, sy: 0});
+const DEEP = [[[-900, -250, 1700], [-300, -500, -3000]], [[-250, -420, 1450], [300, -650, -3000]], [[350, -600, 1250], [900, -480, -3000]], [[900, -450, 1050], [1250, -150, -3000]]];
+let deepK = 0; const deep = () => { const [a, b] = DEEP[deepK++ % DEEP.length]; return fixed(a, b); };
+const skyView = (dir, layout, zoom = 1) => () => fit(G.SKY, dir, 600 * G.spread * zoom, 380 * G.spread * zoom, layout);
+
+/* -------------------------------------------------------------- slides */
+const SECS = t(["Overview", "What sells today", "How well it works", "What drives each product", "Next steps"],
+               ["Overview", "Uptake rates", "Ranking performance", "SHAP drivers", "Close"]);
+const S = [], add = o => S.push(o);
+const insight = (c, x) => `<div class="insight"><p class="eyebrow">${c}</p><p>${x}</p></div>`;
+const p1 = m => m && m['p@1'];
+const lift = cb && gb ? (cb['p@1'] - gb['p@1']) * 100 : null;
+const liftPop = cb && pp ? (cb['p@1'] - pp['p@1']) * 100 : null;
+const scoredNote = cb && cb.n_rows_scored ? t(`Measured on about ${k000(cb.n_rows_scored)} ${headlineFold} with at least one product sold.`, `${D.fold} fold · ${int(cb.n_rows_scored)} scored customers of ${int(cb.n_rows)}`) : '';
+
+add({id: 'cover', sec: 0, layout: 'left', morph: 0, view: skyView([0, .08, 1], 'left'), labels: 'sky', picks: 'sky',
+  html: () => `<p class="eyebrow">${esc(ST.eyebrow || '')}</p>
+    <h1 class="hero">${esc(ST.title || 'ML Model')}</h1>
+    <p class="lede">${esc(ST.tagline || '')}</p>
+    ${ST.intro ? `<p>${esc(ST.intro)}</p>` : ''}
+    ${ST.sample_note ? `<p class="src">${esc(ST.sample_note)}</p>` : ''}
+    <div class="row"><button class="btn" data-go="+1">${t('Start the briefing', 'Start')}</button><span class="hint">Use ← → to move between slides · N for notes</span></div>
+    <p class="src">${t(`Each star is one of our ${P.length} products, sized by how often it sells.`, `${P.length} labels · star size = positives in the ${D.fold} fold`)}</p>`,
+  notes: t(`${ST.title || 'The model'} ranks our ${P.length} products for each customer so the sales team can lead with the one the customer is most likely to buy.`,
+           `Walkthrough of the ${ST.title || 'model'} run: uptake rates by segment, ranking metrics against baselines, the group/customer decomposition and per-label SHAP drivers.`)});
+
+if (cb) add({id: 'summary', sec: 0, layout: 'wide', morph: 0, view: skyView([.6, .28, .75], 'wide', 1.5), labels: null, picks: null,
+  html: () => t(
+    `<p class="eyebrow">The bottom line</p><h2>${gb ? "It picks the right product more often than today's approach" : 'It picks the right product most of the time'}</h2>
+    <div class="cards">
+      <div class="card"><span class="big hl">${pc0(cb['p@1'])}</span><p>of the time, our <b>#1 recommendation</b> was a product the customer actually bought</p></div>
+      ${gb ? `<div class="card"><span class="big">+${Math.round(lift)} pts</span><p>better than the group's <b>usual product mix</b> (${pc0(gb['p@1'])})</p></div>`
+           : pp ? `<div class="card"><span class="big">+${Math.round(liftPop)} pts</span><p>better than recommending the <b>most popular product</b> (${pc0(pp['p@1'])})</p></div>` : ''}
+      ${cb['r@3'] != null ? `<div class="card"><span class="big">${pc0(cb['r@3'])}</span><p>of purchased products appear in our <b>top three</b> suggestions</p></div>` : ''}
+      <div class="card"><span class="big">${P.length}</span><p>products <b>ranked for every customer</b></p></div>
+    </div><p class="src">${scoredNote}</p>`,
+    `<p class="eyebrow">Headline metrics · ${esc(FOLDN[D.fold] || D.fold)}</p><h2>Ranking quality at a glance</h2>
+    <div class="cards">
+      <div class="card"><span class="big hl">${pc(cb['p@1'])}</span><p><b>P@1</b>: top-ranked label is a positive</p></div>
+      ${gb ? `<div class="card"><span class="big">+${f1(lift)}</span><p>pts P@1 over <b>group_baseline</b> (${pc(gb['p@1'])})</p></div>` : ''}
+      ${pp ? `<div class="card"><span class="big">+${f1(liftPop)}</span><p>pts P@1 over <b>popularity</b> (${pc(pp['p@1'])})</p></div>` : ''}
+      ${cb['r@3'] != null ? `<div class="card"><span class="big">${pc(cb['r@3'])}</span><p><b>R@3</b>; NDCG@3 ${cb['ndcg@3'] != null ? f3(cb['ndcg@3']) : '–'}</p></div>` : ''}
+      ${cb.within_group_auc_fx != null ? `<div class="card"><span class="big">${f3(cb.within_group_auc_fx)}</span><p><b>within-group AUC</b> of f(x), label mean</p></div>` : ''}
+    </div><p class="src">Source: metrics_summary.csv · ${scoredNote}</p>`),
+  notes: t(`Headline: on ${headlineFold}, the top recommendation matched a purchased product ${pc(cb['p@1'])} of the time${gb ? `, against ${pc(gb['p@1'])} for each group's usual mix` : ''}. If asked: this is precision at 1; the top-three figure is recall at 3.`,
+           `P@1 / R@3 / NDCG@3 on the ${D.fold} fold for the served catboost score (offset + f(x)). Baselines: group_baseline = sigmoid(offset) only; popularity = segment uptake rate.`)});
+
+add({id: 'how', sec: 0, layout: 'left', morph: 0, view: skyView([-.35, .15, 1], 'left'), labels: 'sky', picks: 'sky',
+  html: () => t(
+    `<p class="eyebrow">How it works</p><h2>Three steps, every customer</h2>
+    <div class="steps">
+      <div class="s"><span class="step">1</span><div><h3>Read the customer</h3><p>Who the customer is, their segment (${SEG.map(c => c[1].toLowerCase()).join(', ')}), their history and the context: engagement, price, timing.</p></div></div>
+      <div class="s"><span class="step">2</span><div><h3>Score every product</h3><p>The model compares this customer with ${M.train && M.train.catboost ? `about <b>${(M.train.catboost.n_rows / 1e6).toFixed(1)} million</b>` : 'many'} past customers and scores each product's chance of being bought.</p></div></div>
+      <div class="s"><span class="step">3</span><div><h3>Hand over a shortlist</h3><p>The sales team sees the products ranked, best first. Products a group doesn't offer, or that don't fit the segment, are left out.</p></div></div>
+    </div>${gb ? '<p class="src">It also learns each group\'s own habits, so suggestions fit the group.</p>' : ''}`,
+    `<p class="eyebrow">Model design</p><h2>Score = group offset + customer term</h2>
+    <div class="steps">
+      <div class="s"><span class="step">1</span><div><h3>Per-label CatBoost f(x)</h3><p>One binary model per label on customer and context features${M.train && M.train.catboost ? `; train fold ${int(M.train.catboost.n_rows)} customers` : ''}.</p></div></div>
+      <div class="s"><span class="step">2</span><div><h3>Group offset</h3><p>Logit offset from each group's history; served score = sigmoid(offset + f(x)).</p></div></div>
+      <div class="s"><span class="step">3</span><div><h3>Eligibility mask</h3><p>Segment and group availability mask before ranking${cb && cb.mean_candidates ? `; ${f1(cb.mean_candidates)} candidates per customer (${D.fold})` : ''}.</p></div></div>
+    </div><p class="src">Folds: ${FOLDS.map(f => FOLDN[f] || f).join(' · ')}</p>`),
+  notes: t('Plain description of the flow. Products a group does not offer, or that do not apply to the segment, are filtered out before ranking.',
+           'Architecture summary. Check the training script if the offset or mask design has changed for this run.')});
+
+const A = (p, c) => p.rate[c];
+function segInsight(c) {
+  const r = P.map(p => [A(p, c), p]).sort((a, b) => b[0] - a[0]);
+  let txt = `${esc(r[0][1].short)} ${t('is bought by', 'is taken up at')} <b>${f1(r[0][0])}%</b>` + (r[1] ? ` and ${esc(r[1][1].short)} ${t('by', 'at')} <b>${f1(r[1][0])}%</b>.` : '.');
+  const near0 = r.filter(([v, p]) => v < 1 && Math.max(...SEG.map(([k]) => A(p, k))) >= 5);
+  if (near0.length) txt += ` ${near0.slice(0, 2).map(([v, p]) => `${esc(p.short)} is near zero (<b>${f1(v)}%</b>)`).join('; ')}.`;
+  return insight(t(`${segName(c)} customers`, segName(c)), txt);
+}
+add({id: 'segments', sec: 1, layout: 'left', morph: 0, view: () => fit(G.CG, [.1, .05, 1], G.chW, G.chH, 'left'), labels: 'chan', picks: 'chan',
+  html: () => `<p class="eyebrow">${t('What sells today', 'Uptake rates')}</p><h2>${t('What customers buy, by segment', 'Uptake rate by segment')}</h2>
+    <p>${t('Each star shows how often customers in each segment buy a product. Bigger is more often. The <span class="hl"><b>gold</b></span> star is the segment where each product sells best.',
+           'Star area ∝ train-fold uptake rate per label × segment. Accent marks each label\'s peak segment. Hover for values.')}</p>
+    ${SEG.map(([c]) => segInsight(c)).join('')}
+    <p class="src">${t('Share of customers that bought each product, from the customers the model learned from.', 'Source: rate_by_segment_pct.csv')}${D.droppedSegments.length ? ` ${t('Segments with no purchases', 'Segments with all-zero uptake')} (${D.droppedSegments.join(', ')}) ${t('are not shown.', 'omitted.')}` : ''}</p>`,
+  notes: t('Historical purchase rates by segment. This is the first benchmark the model has to beat.', 'Train-fold uptake rate by segment, as written by the trainer; this is also the popularity baseline.')});
+
+function sigCard(c) {
+  const r = P.map(p => [A(p, c), p]).sort((a, b) => b[0] - a[0]);
+  return `<div class="card"><p class="eyebrow">${esc(t(segName(c) + ' customers', segName(c)))}</p><span class="big hl">${f1(r[0][0])}%</span>
+    <p><b>${esc(r[0][1].short)}</b> ${t('sells best', 'is the top label')}</p>
+    ${r.slice(1, 4).map(([v, p]) => `<div class="kv"><span>${esc(p.short)}</span><span>${f1(v)}%</span></div>`).join('')}
+    <p class="src">${t('Least likely', 'Lowest')}: ${esc(r[r.length - 1][1].short)} at ${f1(r[r.length - 1][0])}%</p></div>`;
+}
+add({id: 'favorites', sec: 1, layout: 'wide', morph: 0, view: () => fit(G.CG, [-.75, .3, .6], G.chW * 1.35, G.chH * 1.35, 'wide'), labels: null, picks: null,
+  html: () => `<p class="eyebrow">${t('What sells today', 'Uptake rates')}</p><h2>${t('Each segment has a clear favourite', 'Top labels per segment')}</h2>
+    <div class="cards">${SEG.map(([c]) => sigCard(c)).join('')}</div>`,
+  notes: t('The same numbers read by segment.', 'Same table read down each segment.')});
+
+const MODELS = [['catboost', t(ST.title || 'Our model', 'catboost (served)'), 'hl', t('', 'offset + f(x)')], ['group_baseline', t("Group's usual mix", 'group_baseline'), 'mid', t('What each group takes up most', 'sigmoid(offset)')],
+  ['catboost_avg_group', t('Our model at an average group', 'catboost_avg_group'), 'mid', t('No group history', 'logit(p_global) + f(x)')], ['catboost_residual', 'catboost_residual', '', 'f(x) only'],
+  ['popularity', t('Most popular product', 'popularity'), '', t('For the segment, every group', 'segment uptake rate')]];
+if (cb && (gb || pp)) add({id: 'vs-today', sec: 2, layout: 'wide', morph: 0, view: deep(), labels: null, picks: null,
+  html: () => { const rows = MODELS.filter(([m]) => MF[m] && (!EX || ['catboost', 'group_baseline', 'popularity'].includes(m)));
+    return `<p class="eyebrow">${t('How well it works', 'Ranking performance')}</p><h2>${t("Our top pick beats today's approaches", 'Served model vs. baselines')}</h2>
+    <div class="split">
+      <div class="card"><p class="eyebrow" style="color:var(--soft)">${t('How often the #1 suggestion was bought', `P@1 · ${D.fold}`)}</p>
+        <div class="bars">${rows.map(([m, n, c, s]) => `<div class="r"><span class="lab">${m === 'catboost' ? `<b>${esc(n)}</b>` : esc(n)}${s ? `<small>${esc(s)}</small>` : ''}</span><div class="track"><i class="${c}" style="--w:${pc(MF[m]['p@1'])}"></i></div><span class="v">${t(pc0(MF[m]['p@1']), pc(MF[m]['p@1']))}</span></div>`).join('')}</div></div>
+      <div style="display:flex;flex-direction:column;gap:22px">
+        ${gb ? `<div><span class="big hl">+${t(Math.round(lift), f1(lift))} pts</span><p>${t('<span class="good">✓ Better</span> than following each group\'s usual mix', 'P@1 over group_baseline: what the customer term adds beyond the group baseline')}</p></div>` : ''}
+        ${pp ? `<div><span class="big">+${t(Math.round(liftPop), f1(liftPop))} pts</span><p>${t('<span class="good">✓ Better</span> than recommending the most popular product', 'P@1 over popularity')}</p></div>` : ''}
+      </div></div><p class="src">${scoredNote}</p>`; },
+  notes: t(`On ${headlineFold}: our model ${pc(cb['p@1'])}${gb ? `, group usual mix ${pc(gb['p@1'])}` : ''}${pp ? `, most popular product ${pc(pp['p@1'])}` : ''}. The group baseline is the tougher benchmark because it already knows each group's habits.`,
+           'catboost minus group_baseline is the honest measure of what the model adds over the group baseline. catboost_residual ranks departure from the group norm, not preference. catboost_avg_group is the portable case for new groups.')});
+
+if (FOLDS.length > 1) add({id: 'holds-up', sec: 2, layout: 'wide', morph: 0, view: deep(), labels: null, picks: null,
+  html: () => t(
+    `<p class="eyebrow">How well it works</p><h2>It holds up on customers it has never seen</h2>
+    <div class="split">
+      <div class="card"><p class="eyebrow" style="color:var(--soft)">How often the #1 suggestion was bought</p>
+        <div class="bars">${FOLDS.map(f => `<div class="r"><span class="lab">${esc(FOLDN[f] || f)}</span><div class="track"><i class="${f === D.fold ? 'hl' : 'mid'}" style="--w:${pc(M[f].catboost['p@1'])}"></i></div><span class="v">${pc0(M[f].catboost['p@1'])}</span></div>`).join('')}</div></div>
+      <div style="display:flex;flex-direction:column;gap:18px">
+        ${insight('What it means', `A small, expected dip from ${pc0(M[FOLDS[0]].catboost['p@1'])} to ${pc0(cb['p@1'])} on ${headlineFold}${gb ? ", still ahead of today's approaches" : ''}.`)}
+        ${cb.mask_violation_pct != null ? insight('Safe filtering', `Products the model leaves off the list were bought only <b>${cb.mask_violation_pct.toFixed(1)}%</b> of the time.`) : ''}
+      </div></div>`,
+    `<p class="eyebrow">Ranking performance</p><h2>Generalisation across folds</h2>
+    <div class="tblwrap"><table><thead><tr><th>Fold</th><th>Customers</th><th>Scored</th><th>Candidates</th><th>P@1</th><th>R@3</th><th>NDCG@3</th><th>In-group AUC</th><th>Mask viol.</th></tr></thead><tbody>
+    ${FOLDS.map(f => { const r = M[f].catboost, g = k => r[k] != null ? r[k] : null;
+      return `<tr><td>${esc(FOLDN[f] || f)}</td><td>${g('n_rows') != null ? int(r.n_rows) : '–'}</td><td>${g('n_rows_scored') != null ? int(r.n_rows_scored) : '–'}</td><td>${g('mean_candidates') != null ? r.mean_candidates.toFixed(2) : '–'}</td><td>${f3(r['p@1'])}</td><td>${g('r@3') != null ? f3(r['r@3']) : '–'}</td><td>${g('ndcg@3') != null ? f3(r['ndcg@3']) : '–'}</td><td>${g('within_group_auc_fx') != null ? f3(r.within_group_auc_fx) : '–'}</td><td>${g('mask_violation_pct') != null ? r.mask_violation_pct.toFixed(3) + '%' : '–'}</td></tr>`; }).join('')}
+    </tbody></table></div><p class="src">Source: metrics_summary.csv, model = catboost. In-group AUC = within_group_auc_fx (f(x) ranked inside each group).</p>`),
+  notes: t('Quote the newest-period number; the learning-data number is always higher.', 'Watch the drop in within-group AUC from train to the later fold: it isolates overfit in the customer term.')});
+
+if (cb && cb.group_share != null) add({id: 'drivers-split', sec: 2, layout: 'wide', morph: 0, view: deep(), labels: null, picks: null,
+  html: () => { const d = cb.group_share, c = cb.customer_share, x = Math.max(0, 1 - d - c);
+    return `<p class="eyebrow">${t('How well it works', 'Ranking performance')}</p><h2>${t('About half of each recommendation reflects the group', 'Group vs. customer share of the score')}</h2>
+    <div class="card"><p class="eyebrow" style="color:var(--soft)">${t(`What shapes a recommendation (${headlineFold.split(' ')[0]} customers)`, `Share of predicted log-odds variance · ${D.fold}`)}</p>
+      <div class="stack"><div class="d" style="--w:${pc(d)}">${t(pc0(d), pc(d))}<small>${t('Group habits', 'group offset')}</small></div><div class="c" style="--w:${pc(c)}">${t(pc0(c), pc(c))}<small>${t('Customer &amp; context', 'customer f(x)')}</small></div><div class="x" style="--w:${pc(x)}">${pc0(x)}</div></div>
+      <p class="src">${t('Grey: the overlap, where group habits and customer details point the same way.', 'Grey: 2 × group–customer covariance.')}</p></div>
+    <div class="cards">
+      ${avg && pp ? `<div class="card"><span class="big hl">${t(pc0(avg['p@1']), pc(avg['p@1']))}</span><p>${t(`<b>Works for new groups too.</b> With no group history, the model is still right ${pc0(avg['p@1'])} of the time, versus ${pc0(pp['p@1'])} for the most popular product.`, `<b>catboost_avg_group</b> P@1 vs ${pc(pp['p@1'])} popularity: the customer term is portable.`)}</p></div>` : ''}
+      ${res && gb && !EX ? `<div class="card"><span class="big">${pc(res['p@1'])}</span><p><b>catboost_residual</b> P@1, below group_baseline (${pc(gb['p@1'])}): f(x) alone ranks departure from the group norm, not preference.</p></div>`
+        : `<div class="card"><span class="big">${t(pc0(c), pc(c))}</span><p>${t('<b>Customer and context details</b> carry the rest. That is the part that helps a group grow beyond its usual habits.', '<b>customer_share</b> of logit variance.')}</p></div>`}
+    </div>`; },
+  notes: t('Roughly half of the score comes from each group\'s habits; the customer and context details carry most of the rest.', `Variance decomposition of offset + f(x): group ${pc(cb.group_share)}, customer ${pc(cb.customer_share)}.`)});
+
+let sortState = {k: 'buy', dir: -1};
+const SC = t([['short', 'Product', 'l'], ['buy', 'Buy rate'], ['all', 'Overall score'], ['allg', 'Grade', 'l']].concat(hasWD ? [['in', 'Within one group'], ['ing', 'Grade', 'l']] : []),
+             [['short', 'Label', 'l'], ['n', 'Eligible'], ['buy', 'Uptake'], ['all', 'AUC'], ['ap', 'Avg precision']].concat(hasWD ? [['in', 'In-group AUC']] : []));
+const scVal = (p, k) => ({short: p.short, n: p.oot.n_eligible, buy: p.oot.pos_rate, all: p.oot.auc, allg: p.oot.auc, ap: p.oot.ap || 0, in: p.wd ? p.wd.auc : 0, ing: p.wd ? p.wd.auc : 0})[k];
+function scBody() {
+  const rows = [...P].sort((a, b) => { const x = scVal(a, sortState.k), y = scVal(b, sortState.k); return (x > y ? 1 : x < y ? -1 : 0) * sortState.dir; });
+  const best = k => Math.max(...P.map(p => scVal(p, k)));
+  return rows.map(p => t(
+    `<tr><td>${esc(p.short)}</td><td>${f1(p.oot.pos_rate)}%</td><td>${score(p.oot.auc)}</td><td class="l">${gradeTag(p.oot.auc)}</td>${hasWD ? `<td>${score(p.wd.auc)}</td><td class="l">${gradeTag(p.wd.auc)}</td>` : ''}</tr>`,
+    `<tr><td>${esc(p.short)}</td><td>${int(p.oot.n_eligible)}</td><td>${f1(p.oot.pos_rate)}%</td><td class="${p.oot.auc === best('all') ? 'top' : ''}">${f3(p.oot.auc)}</td><td class="${p.oot.ap === best('ap') ? 'top' : ''}">${p.oot.ap != null ? f3(p.oot.ap) : '–'}</td>${hasWD ? `<td class="${p.wd.auc === best('in') ? 'top' : ''}">${f3(p.wd.auc)}</td>` : ''}</tr>`)).join('');
+}
+if (hasPL) add({id: 'report-card', sec: 2, layout: 'wide', morph: 0, view: deep(), labels: null, picks: null,
+  html: () => `<p class="eyebrow">${t('How well it works', 'Ranking performance')}</p><h2>${t('Product report card', 'Per-label metrics')}</h2>
+    ${EX ? `<p>How well the model tells likely buyers from non-buyers, scored out of 100. <b>50</b> is a coin flip and <b>100</b> is perfect.${hasWD ? ' "Within one group" compares customers at the same group.' : ''}</p>` : ''}
+    <div class="tblwrap"><table><thead><tr>${SC.map(([k, n, l]) => `<th class="${l || ''}" ${k === sortState.k ? `aria-sort="${sortState.dir < 0 ? 'descending' : 'ascending'}"` : ''}><button data-sort="${k}">${n}</button></th>`).join('')}</tr></thead><tbody>${scBody()}</tbody></table></div>
+    <p class="src">${t(`Grades: Excellent 90+, Strong 80–89, Good 70–79, Fair below 70. ${FOLDN[D.fold] || D.fold} only. Click a column to sort.`, `Source: per_label_metrics_${D.fold}.csv${hasWD ? `, per_label_within_group_auc_${D.fold}.csv` : ''} · accent = best in column · click to sort`)}</p>`,
+  after: el => el.querySelectorAll('[data-sort]').forEach(b => b.addEventListener('click', () => {
+    const k = b.dataset.sort; sortState = {k, dir: sortState.k === k ? -sortState.dir : (k === 'short' ? 1 : -1)};
+    el.querySelector('tbody').innerHTML = scBody();
+    el.querySelectorAll('th').forEach(th => th.removeAttribute('aria-sort'));
+    b.parentElement.setAttribute('aria-sort', sortState.dir < 0 ? 'descending' : 'ascending'); })),
+  notes: t('Scores are AUC × 100. "Within one group" removes the group effect and asks only whether customers are ranked correctly inside a group.', 'AUC includes the group offset; in-group AUC isolates f(x) within each group.')});
+
+if (hasShap) {
+  const topP = [...P].sort((a, b) => b.share[0][1] - a.share[0][1])[0];
+  add({id: 'driver-map', sec: 3, layout: 'left', morph: 0, view: () => fit(G.AG, [.08, .04, 1], G.atW, G.atH, 'left'), labels: 'atlas', picks: 'atlas',
+    html: () => `<p class="eyebrow">${t('What drives each product', 'SHAP drivers')}</p><h2>${t('The signals behind each product', 'SHAP atlas')}</h2>
+      <p>${t('Each column is a product and each row a piece of customer information. A bigger star means that information matters more for that product. Hover a star for its share.',
+             `The ${D.atlas.length} features with the highest average share of mean |SHAP| across labels. Hover for raw mean |SHAP|, share and rank.`)}</p>
+      <div class="legend"><span><i></i>${t('Bigger star = more influence', 'area ∝ share of mean |SHAP|')}</span><span><i class="hl"></i>${t("The product's #1 signal", 'top feature per label')}</span></div>
+      ${insight(t('Strongest single signal', 'Largest share'), `${fnameHtml(topP.share[0][0])} ${t('drives', 'carries')} ${t(pc0(topP.share[0][1]), pc(topP.share[0][1]))} of ${t('the', '')} ${esc(topP.short)}${t(' recommendation', '')}.`)}
+      <p class="src">${t("Influence comes from the model's driver analysis. It shows patterns in past customers, not causes.", 'Source: shap_mean_abs_lbl_*.csv, normalised per label')}</p>`,
+    notes: t('Influence = share of each input in the model\'s driver analysis (SHAP), comparable across products.', 'Share = mean |SHAP| of the feature / sum over features, per label.')});
+
+  add({id: 'families', sec: 3, layout: 'left', morph: 1, view: () => fit(G.SKY, [0, .06, 1], (FAMS.length > 4 ? 3 : 2) * 450 + 300, Math.ceil(FAMS.length / (FAMS.length > 4 ? 3 : 2)) * 205 + 120, 'left'), labels: 'fam', picks: 'sky',
+    html: () => `<p class="eyebrow">${t('What drives each product', 'SHAP drivers')}</p><h2>${t(`${FAMS.length} kinds of buyer signals`, 'Label families by top driver')}</h2>
+      <p>${t('Products that respond to the same signals group together.', 'Labels grouped by their top one or two SHAP features.')}</p>
+      ${D.families.map(f => `<div class="fam" style="color:${f.color}"><span class="dot"></span><div><h3 style="color:var(--white)">${esc(f.name)}</h3>
+        <p><b>${P.filter(p => p.family === f.name).map(p => esc(p.short)).join(' · ')}</b>${f.why ? `<br>${esc(f.why)}` : ''}</p></div></div>`).join('')}`,
+    notes: D.families.map(f => `${f.name}: ${P.filter(p => p.family === f.name).map(p => p.short).join(', ')}.`).join(' ')});
+}
+
+P.forEach((p, i) => {
+  const top = (p.share || []).slice(0, EX ? 5 : 7), v1 = top.length ? top[0][1] : 1, rv = Object.fromEntries(p.raw || []);
+  const best = SEG.reduce((a, c) => A(p, c[0]) > A(p, a[0]) ? c : a);
+  add({id: 'p-' + p.key.replace(/^lbl_/, ''), sec: 3, layout: 'left', morph: 0, product: p,
+    view: () => { const c = G.consts[i]; if (!c) return skyView([0, .08, 1], 'left')(); const tgt = c.outer.position.clone(), dir = tgt.clone().negate().normalize();
+      return fit(tgt, [dir.x, dir.y + .12, dir.z], 580, 320, 'left'); },
+    labels: G => G.consts[i] ? 'const' + i : 'sky', picks: 'const' + i,
+    html: () => `<p class="eyebrow">${t('Product', 'Label')} ${i + 1} of ${P.length} · ${esc(p.family)}</p>
+      <h2>${esc(p.long || p.short)}</h2>
+      ${p.desc ? `<p>${esc(p.desc)}</p>` : ''}
+      ${p.oot ? `<div class="kpis">
+        ${t(`<div class="kpi"><span>Bought by</span><b>${f1(p.oot.pos_rate)}%</b><span>of eligible customers</span></div>
+             <div class="kpi"><span>Model score</span><b>${score(p.oot.auc)}</b><em>${grade(p.oot.auc)[0]}</em></div>
+             <div class="kpi"><span>Sells best in</span><b>${esc(best[1])}</b><span>${f1(A(p, best[0]))}% of those customers</span></div>`,
+            `<div class="kpi"><span>Uptake (${esc(D.fold)})</span><b>${f1(p.oot.pos_rate)}%</b><span>${int(p.oot.n_pos)} positives</span></div>
+             <div class="kpi"><span>AUC · AP</span><b>${f3(p.oot.auc)}</b><span>AP ${p.oot.ap != null ? f3(p.oot.ap) : '–'}</span></div>
+             <div class="kpi"><span>In-group AUC</span><b>${p.wd ? f3(p.wd.auc) : '–'}</b><span>peak: ${esc(best[1])} ${f1(A(p, best[0]))}%</span></div>`)}
+      </div>` : ''}
+      ${top.length ? `<h3>${t('Top signals', 'Top features · mean |SHAP|')}</h3>
+      <div class="flist">${top.map(([f, v], k) => `<div class="r"><span title="${esc(f)}">${fnameHtml(f)}</span><div class="track"><i class="${k === 0 ? 'hl' : 'mid'}" style="--w:${(v / v1 * 100).toFixed(1)}%"></i></div><span>${t(pc0(v), (rv[f] || 0).toFixed(2))}</span></div>`).join('')}</div>` : ''}
+      ${p.why && p.why.length ? `<h3>${t('More likely to buy when…', 'Direction (from beeswarm)')}</h3><ul class="ticks">${p.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+      ${p.img ? `<div class="row"><button class="btn ghost" data-bee="1">${t('Detailed chart for analysts', 'Open SHAP beeswarm (B)')}</button></div>` : ''}`,
+    notes: `${p.short}. ` + (top.length ? `Top signals: ${top.map(([f, v]) => `${fname(f)} ${pc(v)}`).join(', ')}. ` : '') +
+      (p.oot ? `${f1(p.oot.pos_rate)}% of ${int(p.oot.n_eligible)} eligible customers; AUC ${f3(p.oot.auc)}${p.wd ? `, in-group ${f3(p.wd.auc)}` : ''}. ` : '') +
+      (p.why && p.why.length ? 'Direction points come from the SHAP beeswarm and describe patterns, not causes.' : '')});
+});
+
+function autoTakeaways() {
+  const out = [];
+  if (cb && gb) out.push([t('Better recommendations than today', 'Beats the group baseline'), t(`Our top pick is right ${pc0(cb['p@1'])} of the time, ${Math.round(lift)} points ahead of each group's usual mix.`, `P@1 ${pc(cb['p@1'])} vs ${pc(gb['p@1'])} group_baseline (+${f1(lift)} pts).`)]);
+  else if (cb && pp) out.push([t('Better recommendations than today', 'Beats popularity'), t(`Our top pick is right ${pc0(cb['p@1'])} of the time, ${Math.round(liftPop)} points ahead of the most popular product.`, `P@1 ${pc(cb['p@1'])} vs ${pc(pp['p@1'])} popularity.`)]);
+  out.push([t('Segment sets the stage', 'Segment drives the base rate'), SEG.map(([c, n]) => { const r = [...P].sort((a, b) => A(b, c) - A(a, c))[0]; return `${n} → ${r.short} (${f1(A(r, c))}%)`; }).join('; ') + '.']);
+  if (avg && pp) out.push([t('Ready for new groups', 'Portable customer term'), t(`Even without a group's history the model beats the most-popular approach (${pc0(avg['p@1'])} vs ${pc0(pp['p@1'])}).`, `catboost_avg_group ${pc(avg['p@1'])} vs popularity ${pc(pp['p@1'])}; group share ${cb.group_share != null ? pc(cb.group_share) : 'n/a'}.`)]);
+  if (!EX && FOLDS.length > 1 && cb.within_group_auc_fx != null && M[FOLDS[0]].catboost.within_group_auc_fx != null)
+    out.push(['Watch the customer term', `Within-group AUC ${f3(M[FOLDS[0]].catboost.within_group_auc_fx)} → ${f3(cb.within_group_auc_fx)} from ${FOLDS[0]} to ${D.fold}.`]);
+  if (hasShap) out.push([t('Clear, explainable signals', 'Driver families'), D.families.map(f => `${f.short}: ${P.filter(p => p.family === f.name).map(p => p.short).join(', ')}`).join(' · ') + '.']);
+  return out.slice(0, 4);
+}
+add({id: 'close', sec: 4, layout: 'left', morph: 0, view: () => fit(new THREE.Vector3(0, 0, 0), [0, .42, 1], 5000 * Math.max(1, P.length / 10), 1500, 'left'), labels: 'universe', picks: null,
+  html: () => { const tk = (ST.close && ST.close.takeaways) || autoTakeaways(), nx = ST.close && ST.close.next;
+    return `<p class="eyebrow">${t('Next steps', 'Close')}</p><h2>${t('What this means for us', 'Summary')}</h2>
+    ${tk.map(([a, b], k) => `<div class="take"><span class="n">${k + 1}</span><div><h3>${esc(a)}</h3><p>${esc(b)}</p></div></div>`).join('')}
+    ${nx ? `<div class="next"><p class="eyebrow">${esc(nx.eyebrow || 'Next phase')}</p><h3>${esc(nx.title)}</h3>${nx.text ? `<p>${esc(nx.text)}</p>` : ''}</div>` : ''}`; },
+  notes: (ST.close && ST.close.notes) || t('Close on the takeaways and the next phase.', 'Summary and open items.')});
+
+/* -------------------------------------------------------------- labels */
+const labelHost = $('#labels');
+let labels = [];
+function buildLabels(kind) {
+  if (!G || !kind) return [];
+  if (typeof kind === 'function') kind = kind(G);
+  const T = G.T;
+  const fromLocal = L => ({worldFn: v => L.host.localToWorld(v.copy(L.local)), a: L.a, html: L.html, cls: L.cls});
+  if (kind === 'sky' || kind === 'fam') {
+    const out = G.pStars.map((s, i) => ({worldFn: v => s.getWorldPosition(v), a: () => {
+      const m = G.morph || 0, x = G.skyPos[i].x * (1 - m) + G.famPos[i].x * m, c = m > .5 ? G.famCtr[P[i].family].x : 0;
+      return (m > .5 ? x < c : x < -40) ? 'l' : 'r'; }, off: () => s.userData.size * .5, html: esc(P[i].short), cls: ''}));
+    if (kind === 'fam') FAMS.forEach(f => out.push({worldFn: v => v.copy(G.famCtr[f]).add(new T.Vector3(0, 80, 0)), a: 'c', html: `<span style="color:${FAM[f].color}">${esc(FAM[f].short)}</span>`, cls: 'fam'}));
+    return out;
+  }
+  if (kind === 'chan') return G.chLabels.map(fromLocal);
+  if (kind === 'atlas') return G.atLabels.map(fromLocal);
+  if (kind === 'universe') return G.consts.filter(Boolean).map(c => ({worldFn: v => c.outer.getWorldPosition(v).add(new T.Vector3(0, 230, 0)), a: 'c', html: esc(c.p.short), cls: 'big'}));
+  if (kind.startsWith('const')) { const c = G.consts[+kind.slice(5)]; return c ? c.labels.map(fromLocal) : []; }
+  return [];
+}
+function pickList(kind) {
+  if (!G || !kind) return [];
+  if (kind === 'sky') return G.pStars.map(s => s.userData.core);
+  if (kind === 'chan') return G.chPicks;
+  if (kind === 'atlas') return G.atPicks;
+  if (kind.startsWith('const')) { const c = G.consts[+kind.slice(5)]; return c ? c.picks : []; }
+  return [];
+}
+function setLabels(kind) {
+  for (const L of labels) { L.el.classList.remove('on'); setTimeout(() => L.el.remove(), 600); }
+  labels = buildLabels(kind).map(L => { const el = document.createElement('div'); el.className = 'lb ' + (L.cls || ''); el.innerHTML = L.html; labelHost.appendChild(el); return {...L, el}; });
+}
+let _lv = null, _lv2 = null;
+function updateLabels(show) {
+  if (!labels.length) return;
+  const W = innerWidth, H = innerHeight; _lv = _lv || new THREE.Vector3(); _lv2 = _lv2 || new THREE.Vector3();
+  for (const L of labels) {
+    const wp = L.worldFn(_lv2), dist = wp.distanceTo(G.cam.position);
+    const v = _lv.copy(wp).project(G.cam);
+    if (v.z > 1 || v.z < -1) { L.el.style.visibility = 'hidden'; continue; }
+    L.el.style.visibility = '';
+    const x = (v.x + 1) / 2 * W, y = (1 - v.y) / 2 * H, a = typeof L.a === 'function' ? L.a() : L.a;
+    const o = (L.off ? L.off() * H / (2 * G.TAN * dist) : 0) + 6;
+    let tr;
+    if (a === 'r') tr = `translate(${x + o}px,${y}px) translateY(-50%)`;
+    else if (a === 'l') tr = `translate(${x - o}px,${y}px) translate(-100%,-50%)`;
+    else if (a === 'c') tr = `translate(${x}px,${y - 4}px) translate(-50%,-100%)`;
+    else if (a === 'below') tr = `translate(${x}px,${y + 4}px) translateX(-50%)`;
+    else tr = `translate(${x}px,${y}px) translateY(-50%) rotate(-38deg)`;
+    L.el.style.transform = tr;
+    L.el.classList.toggle('on', show);
+  }
+}
+
+/* ---------------------------------------------------------- navigation */
+let cur = -1, fly = null, view = null, morphTarget = 0, morphFrom = 0, morphT0 = 0, picks = [];
+const stage = $('#stage');
+$('#brandtag').innerHTML = `<b>${esc(ST.title || 'ML Model')}</b><br>${esc(ST.brand_tag || '')}`;
+$('#dnote').textContent = t('For analysts. Each dot is one customer. Dots right of the centre line made the product more likely; colour shows the value (red high, blue low, grey not recorded).',
+                            'Each dot is one eligible test row; x = SHAP value (log-odds); colour = feature value (red high, blue low, grey missing/categorical code).');
+const ticks = S.map((s, k) => { const b = document.createElement('button'); b.setAttribute('aria-label', `Go to slide ${k + 1}`); b.title = `${k + 1}`; b.addEventListener('click', () => goTo(k)); $('#ticks').appendChild(b); return b; });
+function goTo(i, instant = false) {
+  i = Math.max(0, Math.min(S.length - 1, i));
+  if (i === cur) return;
+  const s = S[i]; cur = i;
+  document.body.dataset.layout = s.layout;
+  for (const old of stage.querySelectorAll('.panel')) { old.classList.add('leave'); setTimeout(() => old.remove(), 550); }
+  const el = document.createElement('section'); el.className = `panel ${s.layout} enter`; el.innerHTML = s.html(); el.setAttribute('aria-label', `Slide ${i + 1} of ${S.length}`);
+  stage.appendChild(el); requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('enter')));
+  setTimeout(() => el.classList.remove('enter'), 60);
+  setTimeout(() => { if (!el.classList.contains('leave')) el.classList.add('settled'); }, reduce ? 0 : 1300);
+  if (s.after) s.after(el);
+  $('#sec').textContent = SECS[s.sec];
+  $('#count').textContent = `${String(i + 1).padStart(2, '0')} / ${S.length}`;
+  ticks.forEach((b, k) => { b.classList.toggle('cur', k === i); b.classList.toggle('done', k < i); if (k === i) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });
+  $('#ntext').textContent = s.notes || '';
+  if (s.product && s.product.img) { $('#dtitle').textContent = `${s.product.short}: ${t('detailed driver chart', 'SHAP beeswarm')}`; $('#dimg').src = s.product.img; $('#dimg').alt = `SHAP beeswarm for ${s.product.short}`; }
+  else closeDrawer();
+  try { history.replaceState(null, '', '#s' + (i + 1)); } catch (e) {}
+  if (G) {
+    const to = s.view();
+    const from = view ? {pos: view.pos.clone(), tgt: view.tgt.clone(), sx: view.sx, sy: view.sy} : to;
+    const dist = from.pos.distanceTo(to.pos);
+    fly = (instant || reduce || !view) ? null : {from, to, t0: performance.now(), dur: 1300 + Math.min(dist / 2.5, 1500), arc: Math.min(dist * .18, 900)};
+    if (!fly) view = {pos: to.pos.clone(), tgt: to.tgt.clone(), sx: to.sx, sy: to.sy};
+    if (s.morph !== morphTarget) { morphFrom = G.morph || 0; morphTarget = s.morph; morphT0 = performance.now(); }
+    setLabels(s.labels); picks = pickList(s.picks);
+  }
+}
+const next = () => goTo(cur + 1), prev = () => goTo(cur - 1);
+$('#next').addEventListener('click', next); $('#prev').addEventListener('click', prev);
+stage.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) { const v = g.dataset.go; if (v[0] === '+') goTo(cur + +v.slice(1)); else if (v[0] === '=') goTo(S.findIndex(s => s.id === v.slice(1))); }
+  if (e.target.closest('[data-bee]')) openDrawer();
+});
+function openDrawer() { if (S[cur] && S[cur].product && S[cur].product.img) $('#drawer').classList.add('open'); }
+function closeDrawer() { $('#drawer').classList.remove('open'); }
+$('#dclose').addEventListener('click', closeDrawer);
+function toggleNotes() { const n = $('#notes'), o = !n.classList.contains('open'); n.classList.toggle('open', o); $('#ntog').setAttribute('aria-pressed', String(o)); }
+$('#ntog').addEventListener('click', toggleNotes);
+$('#fs').addEventListener('click', () => { try { const r = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); if (r && r.catch) r.catch(() => {}); } catch (e) {} });
+addEventListener('keydown', e => {
+  const k = e.key, onBtn = e.target && e.target.closest && e.target.closest('button');
+  if (k === 'ArrowRight' || k === 'PageDown' || (k === ' ' && !onBtn)) { e.preventDefault(); next(); }
+  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); prev(); }
+  else if (k === 'Home') goTo(0); else if (k === 'End') goTo(S.length - 1);
+  else if (k === 'b' || k === 'B') { $('#drawer').classList.contains('open') ? closeDrawer() : openDrawer(); }
+  else if (k === 'n' || k === 'N') toggleNotes();
+  else if (k === 'Escape') { closeDrawer(); $('#notes').classList.remove('open'); $('#ntog').setAttribute('aria-pressed', 'false'); }
+});
+let sw = null;
+addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') sw = {x: e.clientX, y: e.clientY}; });
+addEventListener('pointerup', e => { if (!sw) return; const dx = e.clientX - sw.x, dy = e.clientY - sw.y; sw = null;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5 && !(e.target.closest && e.target.closest('.tblwrap'))) dx < 0 ? next() : prev(); });
+
+/* -------------------------------------------------------------- render */
+const mouse = {x: 0, y: 0, cx: -1, cy: -1};
+addEventListener('pointermove', e => { mouse.x = e.clientX / innerWidth * 2 - 1; mouse.y = e.clientY / innerHeight * 2 - 1; mouse.cx = e.clientX; mouse.cy = e.clientY; });
+const tip = $('#tip');
+function resize() { if (!G) return; G.renderer.setSize(innerWidth, innerHeight, false); G.cam.aspect = innerWidth / innerHeight; G.cam.updateProjectionMatrix();
+  if (cur >= 0) { const to = S[cur].view(); if (fly) fly.to = to; else view = {pos: to.pos.clone(), tgt: to.tgt.clone(), sx: to.sx, sy: to.sy}; } }
+const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+let last = performance.now(), ray = null, lastM = -1;
+function tick(now) {
+  requestAnimationFrame(tick);
+  const dt = Math.min(.05, (now - last) / 1000); last = now; const tm = now / 1000, T = G.T;
+  G.starMat.uniforms.uTime.value = tm;
+  let show = true;
+  if (fly) {
+    const k = Math.min(1, (now - fly.t0) / fly.dur), e = ease(k);
+    const pos = fly.from.pos.clone().lerp(fly.to.pos, e), tgt = fly.from.tgt.clone().lerp(fly.to.tgt, e);
+    pos.addScaledVector(pos.clone().sub(tgt).normalize(), Math.sin(Math.PI * e) * fly.arc);
+    view = {pos, tgt, sx: fly.from.sx + (fly.to.sx - fly.from.sx) * e, sy: fly.from.sy + (fly.to.sy - fly.from.sy) * e};
+    show = k > .86; if (k >= 1) fly = null;
+  }
+  const fwd = view.tgt.clone().sub(view.pos), dist = fwd.length(); fwd.normalize();
+  const right = new T.Vector3().crossVectors(fwd, new T.Vector3(0, 1, 0)).normalize(), up = new T.Vector3().crossVectors(right, fwd);
+  const amp = reduce ? 0 : dist * .016;
+  G.cam.position.copy(view.pos).addScaledVector(right, Math.sin(tm * .13) * amp + mouse.x * amp * 1.3).addScaledVector(up, Math.cos(tm * .11) * amp * .5 - mouse.y * amp);
+  G.cam.lookAt(view.tgt);
+  G.cam.setViewOffset(innerWidth, innerHeight, view.sx, view.sy, innerWidth, innerHeight);
+  // families morph: a timed tween, so it finishes on schedule whatever the frame rate
+  const mk = reduce ? 1 : Math.min(1, (now - morphT0) / 1600);
+  G.morph = morphFrom + (morphTarget - morphFrom) * ease(mk);
+  const m = Math.max(0, Math.min(1, G.morph));
+  if (Math.abs(m - lastM) > 1e-4) {
+    const cpos = G.pStars.map((s, i) => { s.position.lerpVectors(G.skyPos[i], G.famPos[i], m); G.starColor(s, G.pale.clone().lerp(G.famCol[i], m)); return s.position; });
+    G.skyLines.material.opacity = .4 * (1 - m); G.famLines.material.opacity = .5 * m;
+    setLinesFn(G.skyLines, cpos, G.skyEdges); if (G.famEdges.length) setLinesFn(G.famLines, cpos, G.famEdges); lastM = m;
+  }
+  if (!reduce) for (const c of G.consts) if (c) c.inner.rotation.y = Math.sin(tm * .22 + c.i) * .24;
+  G.renderer.render(G.scene, G.cam);
+  updateLabels(show);
+  if (picks.length && mouse.cx >= 0 && !fly) {
+    ray = ray || new T.Raycaster();
+    ray.setFromCamera({x: mouse.cx / innerWidth * 2 - 1, y: -(mouse.cy / innerHeight) * 2 + 1}, G.cam);
+    const hit = ray.intersectObjects(picks, false)[0];
+    const over = document.elementFromPoint(mouse.cx, mouse.cy);
+    if (hit && hit.object.userData.tip && !(over && over.closest('.panel,#bar,#top,#drawer,#notes'))) {
+      tip.innerHTML = hit.object.userData.tip; tip.hidden = false;
+      const w = tip.offsetWidth; tip.style.transform = `translate(${Math.min(mouse.cx + 14, innerWidth - w - 8)}px,${mouse.cy + 16}px)`;
+      document.body.style.cursor = 'pointer';
+    } else { tip.hidden = true; document.body.style.cursor = ''; }
+  } else tip.hidden = true;
+}
+
+try { if (!window.THREE) throw new Error('three.js did not load'); G = init3D(); }
+catch (e) { G = null; document.body.classList.add('no-gl'); console.warn('3D disabled:', e && e.message); }
+const h = /^#s(\d+)$/.exec(location.hash || ''); const start = h ? Math.max(0, Math.min(S.length - 1, +h[1] - 1)) : 0;
+if (G) { resize(); addEventListener('resize', resize); }
+goTo(start, true);
+if (G) requestAnimationFrame(tick);
+})();
+</script>

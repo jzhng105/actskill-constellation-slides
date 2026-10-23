@@ -1,0 +1,38 @@
+{
+  "audience": "exec",
+  "title": "Next-Best Product",
+  "tagline": "Recommending the right product for every customer",
+  "eyebrow": "Demo · Executive briefing",
+  "intro": "A model that looks at each customer and ranks our six products by how likely they are to buy them.",
+  "brand_tag": "Product recommendation engine",
+  "sample_note": "Demo built on synthetic data for a fictional subscription business. All figures are illustrative.",
+  "products": [
+    {"key": "lbl_cloud_storage", "short": "Cloud Storage", "long": "Cloud Storage", "desc": "Extra storage space for files and photos, billed monthly.",
+     "family": "Driven by engagement", "why": ["They visit often (the strongest signal)", "They use the app on a phone", "They open and click our emails", "They are newer, younger customers"]},
+    {"key": "lbl_priority_support", "short": "Priority Support", "long": "Priority Support", "desc": "Faster, dedicated help when something goes wrong.",
+     "family": "Driven by engagement", "why": ["They have contacted support recently (the strongest signal)", "They spend more per order", "They have been a customer for longer"]},
+    {"key": "lbl_premium_plan", "short": "Premium Plan", "long": "Premium Plan", "desc": "The top subscription tier, with every feature included.",
+     "family": "Driven by price & value", "why": ["They spend more per order (the strongest signal)", "They have been a customer for longer", "They visit often", "They pay close to full price rather than on discount"]},
+    {"key": "lbl_annual_upgrade", "short": "Annual Upgrade", "long": "Annual Upgrade", "desc": "Switching from monthly to yearly billing at a lower overall price.",
+     "family": "Driven by the customer", "why": ["They have been a customer for longer (the strongest signal)", "They have bought from us several times", "They are offered a discount"]},
+    {"key": "lbl_family_bundle", "short": "Family Bundle", "long": "Family Bundle", "desc": "One plan shared by up to five people in a household.",
+     "family": "Driven by history", "why": ["They already hold several of our products (the strongest signal)", "They are in an older age band", "They shop in store"]},
+    {"key": "lbl_gift_card", "short": "Gift Card", "long": "Gift Card", "desc": "Prepaid credit to give to someone else.",
+     "family": "Driven by context", "why": ["It is late in the year (the strongest signal)", "They shop in store", "They have bought from us before"]}
+  ],
+  "families": [
+    {"name": "Driven by engagement", "short": "Engagement", "why": "How actively they visit, read and get in touch"},
+    {"name": "Driven by price & value", "short": "Price & value", "why": "What they spend and the price they are offered"},
+    {"name": "Driven by the customer", "short": "The customer", "why": "Who the customer is and how long they have been with us"},
+    {"name": "Driven by history", "short": "History", "why": "What they already hold and how recently they bought"},
+    {"name": "Driven by context", "short": "Context", "why": "The segment, device and timing of the interaction"}
+  ],
+  "feature_names": {},
+  "driver_map_rows": 10,
+  "close": {
+    "takeaways": null,
+    "next": {"eyebrow": "Next phase", "title": "Pilot in the app, then roll out",
+             "text": "Show the top suggestion to one in ten app users for six weeks, compare uptake with a control group, then extend to the website and stores."},
+    "notes": "Close on the four takeaways, then the pilot plan. This is a demo: every number is synthetic."
+  }
+}

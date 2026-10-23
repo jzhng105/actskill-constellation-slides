@@ -1,0 +1,9 @@
+feature,mean_abs_shap
+visits_30d,0.447
+device_type,0.259
+email_engagement,0.183
+segment,0.151
+tenure_months,0.082
+days_since_last_purchase,0.061
+age_band,0.039
+sale_month,0.018

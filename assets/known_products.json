@@ -1,0 +1,30 @@
+{
+  "_note": "Example defaults for a product recommendation model. Product names and descriptions are placeholders: replace them with the user's own product terms before an external audience sees them. Labels not listed here get a name derived from the label key (lbl_premium_plan -> Premium Plan).",
+  "products": {
+    "lbl_product_a": {"short": "Product A", "long": "Product A", "desc": "Placeholder: one plain sentence on what this product does for the customer."},
+    "lbl_product_b": {"short": "Product B", "long": "Product B", "desc": "Placeholder: one plain sentence on what this product does for the customer."},
+    "lbl_product_c": {"short": "Product C", "long": "Product C", "desc": "Placeholder: one plain sentence on what this product does for the customer."}
+  },
+  "feature_names": {
+    "segment": "Segment", "region": "Region", "age_band": "Age band", "tenure_months": "Customer tenure", "is_new_customer": "New vs. existing customer",
+    "num_products_held": "Products already held", "prior_purchases": "Past purchases", "days_since_last_purchase": "Recent activity",
+    "avg_order_value": "Spend per order", "price": "Price paid", "discount_pct": "Discount", "income_band": "Income band",
+    "visits_30d": "Visits (30 days)", "email_engagement": "Email engagement", "support_contacts": "Support contacts",
+    "device_type": "Device", "sale_month": "Month", "sale_dow": "Day of week", "has_email": "Email on file", "has_phone": "Phone on file"
+  },
+  "family_of_feature": {
+    "age_band": "Driven by the customer", "tenure_months": "Driven by the customer", "is_new_customer": "Driven by the customer", "income_band": "Driven by the customer", "region": "Driven by the customer",
+    "num_products_held": "Driven by history", "prior_purchases": "Driven by history", "days_since_last_purchase": "Driven by history",
+    "avg_order_value": "Driven by price & value", "price": "Driven by price & value", "discount_pct": "Driven by price & value",
+    "visits_30d": "Driven by engagement", "email_engagement": "Driven by engagement", "support_contacts": "Driven by engagement",
+    "segment": "Driven by context", "device_type": "Driven by context", "sale_month": "Driven by context", "sale_dow": "Driven by context"
+  },
+  "families": {
+    "Driven by the customer": {"short": "The customer", "why": "Who the customer is and how long they have been with us"},
+    "Driven by history": {"short": "History", "why": "What they already hold and how recently they bought"},
+    "Driven by price & value": {"short": "Price & value", "why": "What they spend and the price they are offered"},
+    "Driven by engagement": {"short": "Engagement", "why": "How actively they visit, read and get in touch"},
+    "Driven by context": {"short": "Context", "why": "The segment, device and timing of the interaction"}
+  },
+  "segment_names": {"UNKNOWN": "Unknown"}
+}

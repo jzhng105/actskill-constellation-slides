@@ -1,0 +1,9 @@
+feature,mean_abs_shap
+sale_month,0.421
+segment,0.233
+prior_purchases,0.171
+avg_order_value,0.102
+age_band,0.074
+region,0.051
+discount_pct,0.043
+sale_dow,0.028

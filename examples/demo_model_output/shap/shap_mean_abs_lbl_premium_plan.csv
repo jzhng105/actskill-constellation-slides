@@ -1,0 +1,9 @@
+feature,mean_abs_shap
+avg_order_value,0.412
+tenure_months,0.268
+visits_30d,0.201
+segment,0.133
+discount_pct,0.094
+age_band,0.071
+email_engagement,0.052
+sale_month,0.031

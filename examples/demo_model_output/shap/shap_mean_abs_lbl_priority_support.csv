@@ -1,0 +1,9 @@
+feature,mean_abs_shap
+support_contacts,0.398
+avg_order_value,0.231
+tenure_months,0.164
+num_products_held,0.122
+segment,0.087
+age_band,0.058
+visits_30d,0.041
+has_phone,0.019

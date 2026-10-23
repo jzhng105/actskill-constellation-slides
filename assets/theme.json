@@ -1,0 +1,25 @@
+{
+  "_note": "Look of every deck. Copy this file to make a client theme (keep the keys, change the values) and pass it with --theme. The logo path is relative to the theme file; use a light logo on a transparent background, about 800x272.",
+  "name": "ZNSTARS",
+  "logo": "img/znstars-white.png",
+  "logo_alt": "ZNSTARS",
+  "colors": {
+    "bg": "#080c1f",
+    "panel": "#0c1128",
+    "deep": "#3a44a0",
+    "secondary": "#7c8cff",
+    "accent": "#ffd36e",
+    "text": "#ffffff",
+    "soft": "#a9b3d6",
+    "mute": "#6b7499",
+    "good": "#4fd1a1",
+    "border": "#252d55",
+    "line": "#a0afff"
+  },
+  "family_colors": ["#ffd36e", "#ffffff", "#6b7499", "#7c8cff", "#a9b3d6", "#3a44a0"],
+  "fonts": {
+    "head": "Sora",
+    "body": "Inter",
+    "href": "https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;600;700&display=swap"
+  }
+}

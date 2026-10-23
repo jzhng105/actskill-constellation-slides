@@ -1,0 +1,9 @@
+feature,mean_abs_shap
+num_products_held,0.356
+age_band,0.287
+segment,0.171
+income_band,0.126
+tenure_months,0.089
+price,0.064
+region,0.047
+has_email,0.021
