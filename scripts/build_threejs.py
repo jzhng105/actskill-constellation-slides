@@ -8,7 +8,7 @@ files, or open it locally in a browser. Pass --standalone for a full HTML docume
 """
 import argparse, html as htmlmod, json, shutil
 from pathlib import Path
-from common import SKILL, load_model_dir, load_theme, merge, rgb
+from common import SKILL, extension_js, load_extensions, load_model_dir, load_theme, merge, rgb
 
 ap = argparse.ArgumentParser()
 ap.add_argument("model_dir")
@@ -24,6 +24,10 @@ TH = load_theme(a.theme)
 D = merge(data, story, TH)
 C = TH["colors"]
 D["theme"] = {"name": TH["name"], "colors": C}
+EXTS = load_extensions()
+for x in EXTS:
+    if hasattr(x, "extend"):
+        x.extend(D, story, Path(a.story))
 
 out = Path(a.out)
 img = out.parent / "img"
@@ -48,14 +52,14 @@ theme_css = (":root{" + "".join(f"--{v}:{C[k]};" for k, v in (("bg", "bg"), ("pa
              + f"--bg-rgb:{rgb(C['bg'])};--panel-rgb:{rgb(C['panel'])};--accent-rgb:{rgb(C['accent'])};--line-rgb:{rgb(C['line'])};"
              + f"--head:'{TH['fonts']['head']}', Arial, Helvetica, sans-serif;--body:'{TH['fonts']['body']}', Arial, Helvetica, sans-serif;}}")
 html = (html.replace("__TITLE__", htmlmod.escape(title)).replace("__THEME_CSS__", theme_css).replace("__FONTS_HREF__", htmlmod.escape(TH["fonts"]["href"]))
-        .replace("__LOGO_ALT__", htmlmod.escape(TH["logo_alt"])).replace("__LOGO__", logo).replace("__DATA__", payload))
+        .replace("__LOGO_ALT__", htmlmod.escape(TH["logo_alt"])).replace("__LOGO__", logo).replace("__EXT__", extension_js()).replace("__DATA__", payload))
 if a.standalone:
     html = ('<!DOCTYPE html>\n<html lang="en">\n' + html.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">', 1) + '\n</html>\n')
 out.write_text(html, encoding="utf-8")
 
 (out.parent / "artifact_files.json").write_text(json.dumps(files, indent=1), encoding="utf-8")
-print(f"wrote {out} ({len(html):,} bytes), audience={D['audience']}, {len(D['products'])} products, fold={D['fold']}, theme={TH['name']}")
+print(f"wrote {out} ({len(html):,} bytes), audience={D['audience']}, {len(D['products'])} products, fold={D['fold']}, theme={TH['name']}" + (f", extensions={[x.__name__.removeprefix('cs_ext_') for x in EXTS]}" if EXTS else ""))
 print(f"supporting files for publishing: {out.parent / 'artifact_files.json'}")
 missing_why = [p["short"] for p in D["products"] if D["audience"] == "exec" and not p.get("why")]
 if missing_why:

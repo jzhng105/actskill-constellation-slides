@@ -64,6 +64,19 @@ python scripts/build_threejs.py <model_dir> --story story.json --out deck/index.
 Any key you leave out falls back to the ZNSTARS theme. See "Themes" in [`SKILL.md`](SKILL.md) for what each
 colour controls.
 
+## Pro edition
+
+Constellation Slides Pro adds, on top of everything here:
+
+- **A living sky:** the starfield drifts, stars twinkle and shooting stars cross the view.
+- **Pro slide modules,** starting with a side-by-side comparison of your model against its previous version
+  (ranking accuracy and every product's score, old vs. new), on the 3D page and in the slide deck.
+- **Done-for-you branding:** your logo, colours and fonts set up and checked on every slide.
+- **A year of updates and email support.**
+
+Need a briefing built for you instead? ZNSTARS can turn your model output into a finished deck.
+To ask about Pro or a briefing, [open an issue](https://github.com/jzhng105/actskill-constellation-slides/issues).
+
 ## Using it with Claude
 
 Install it in Claude Code (2.1.275 or later):

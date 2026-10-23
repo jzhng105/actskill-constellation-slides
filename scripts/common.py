@@ -3,7 +3,7 @@
 The CSVs supply every number; the story supplies every word a person wrote (names, descriptions,
 families, "more likely when" bullets, the closing story). Nothing here invents a figure.
 """
-import csv, json, sys
+import csv, importlib.util, json, sys
 from pathlib import Path
 
 try:  # Windows consoles default to cp1252; keep status prints from crashing on non-ASCII names
@@ -32,6 +32,27 @@ def load_theme(path=None):
     if bad:
         raise SystemExit(f"theme colours must be #rrggbb: {bad}")
     return th
+
+
+def load_extensions():
+    """Optional extensions: each scripts/ext/<name>.py is a module that may define
+    extend(D, story, story_path)  -> adds data the page or deck needs (both builders call it), and
+    deck_slides(D, order)         -> [(slide_id, after_slide_id, build(api) -> html), ...] for build_deck.py (order = the core slide ids);
+    deck_bar(w, h, color, radius) -> html drawing one bar of a Slides-deck bar chart (default: a filled <div>);
+    each assets/ext/<name>.js is inlined into the three.js page and may push {init, frame, slides, panel} onto window.CS_EXT.
+    The free edition ships none."""
+    mods = []
+    for f in sorted((SKILL / "scripts" / "ext").glob("*.py")):
+        spec = importlib.util.spec_from_file_location(f"cs_ext_{f.stem}", f)
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        mods.append(m)
+    return mods
+
+
+def extension_js():
+    """The assets/ext/*.js sources, in name order, as <script> blocks (empty when there are none)."""
+    return "\n".join(f"<script>\n{f.read_text(encoding='utf-8')}\n</script>" for f in sorted((SKILL / "assets" / "ext").glob("*.js")))
 
 
 def rgb(hex_):
