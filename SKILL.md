@@ -83,7 +83,7 @@ always dark, so `bg` and `panel` must be dark and `text`/`soft` light. Check one
 
 ## Extensions
 Both builders load optional extensions: `scripts/ext/*.py` (may define `extend(D, story, story_path)` to add data, and
-`deck_slides(D)` to add Slides-deck slides) and `assets/ext/*.js` (inlined into the 3D page; each pushes
+`deck_slides(D, order)` to add Slides-deck slides) and `assets/ext/*.js` (inlined into the 3D page; each pushes
 `{init, frame, slides}` onto `window.CS_EXT`). The free edition ships none; the Pro edition uses them for its extra
 modules. If extensions are present, the build prints their names; mention any extension slides to the user.
 

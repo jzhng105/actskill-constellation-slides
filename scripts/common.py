@@ -37,7 +37,7 @@ def load_theme(path=None):
 def load_extensions():
     """Optional extensions: each scripts/ext/<name>.py is a module that may define
     extend(D, story, story_path)  -> adds data the page or deck needs (both builders call it), and
-    deck_slides(D)                -> [(slide_id, after_slide_id, build(api) -> html), ...] for build_deck.py;
+    deck_slides(D, order)         -> [(slide_id, after_slide_id, build(api) -> html), ...] for build_deck.py (order = the core slide ids);
     each assets/ext/<name>.js is inlined into the three.js page and may push {init, frame, slides} onto window.CS_EXT.
     The free edition ships none."""
     mods = []

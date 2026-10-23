@@ -172,7 +172,7 @@ if cb and cb.get("group_share") is not None: ORDER.append("group-share")
 if has_pl: ORDER.append("report-card")
 if has_shap: ORDER += ["driver-map", "families"]
 ORDER += [f"p-{p['key'].replace('lbl_', '')}" for p in P] + ["close"]
-EXT_SLIDES = [sl for x in EXTS if hasattr(x, "deck_slides") for sl in x.deck_slides(D)]  # (id, after, build)
+EXT_SLIDES = [sl for x in EXTS if hasattr(x, "deck_slides") for sl in x.deck_slides(D, list(ORDER))]  # (id, after, build)
 for sid_, after_, _ in EXT_SLIDES:
     ORDER.insert(ORDER.index(after_) + 1 if after_ in ORDER else len(ORDER) - 1, sid_)
 S = {}
