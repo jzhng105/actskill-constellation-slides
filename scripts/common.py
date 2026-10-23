@@ -38,7 +38,8 @@ def load_extensions():
     """Optional extensions: each scripts/ext/<name>.py is a module that may define
     extend(D, story, story_path)  -> adds data the page or deck needs (both builders call it), and
     deck_slides(D, order)         -> [(slide_id, after_slide_id, build(api) -> html), ...] for build_deck.py (order = the core slide ids);
-    each assets/ext/<name>.js is inlined into the three.js page and may push {init, frame, slides} onto window.CS_EXT.
+    deck_bar(w, h, color, radius) -> html drawing one bar of a Slides-deck bar chart (default: a filled <div>);
+    each assets/ext/<name>.js is inlined into the three.js page and may push {init, frame, slides, panel} onto window.CS_EXT.
     The free edition ships none."""
     mods = []
     for f in sorted((SKILL / "scripts" / "ext").glob("*.py")):

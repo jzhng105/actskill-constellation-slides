@@ -780,6 +780,7 @@ function goTo(i, instant = false) {
   setTimeout(() => el.classList.remove('enter'), 60);
   setTimeout(() => { if (!el.classList.contains('leave')) el.classList.add('settled'); }, reduce ? 0 : 1300);
   if (s.after) s.after(el);
+  for (const x of EXTS) if (x.panel) x.panel(el, s, {reduce, TH: D.theme.colors});  // extensions can restyle a slide's charts
   $('#sec').textContent = SECS[s.sec];
   $('#count').textContent = `${String(i + 1).padStart(2, '0')} / ${S.length}`;
   ticks.forEach((b, k) => { b.classList.toggle('cur', k === i); b.classList.toggle('done', k < i); if (k === i) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current'); });

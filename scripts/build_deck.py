@@ -176,6 +176,11 @@ EXT_SLIDES = [sl for x in EXTS if hasattr(x, "deck_slides") for sl in x.deck_sli
 for sid_, after_, _ in EXT_SLIDES:
     ORDER.insert(ORDER.index(after_) + 1 if after_ in ORDER else len(ORDER) - 1, sid_)
 S = {}
+_DECK_BAR = next((x.deck_bar for x in EXTS if hasattr(x, "deck_bar")), None)  # an extension may draw bars its own way
+def bar(w, h, color, radius):
+    if _DECK_BAR:
+        return _DECK_BAR(w, h, color, radius)
+    return f'<div style="width:{w:.0f}px;height:{h}px;border-radius:{radius};background:{color}"></div>'
 src = lambda x: t("", f"Source: {x}")
 
 # cover
@@ -256,7 +261,7 @@ def bars(rows_, scale=760):
     for name, sub, v, col in rows_:
         out += (f'<div style="display:flex;flex-direction:row;align-items:center;gap:24px"><div style="width:420px;display:flex;flex-direction:column"><p style="font-size:30px;line-height:1.25;color:{WHITE}">{name}</p>'
                 + (f'<p style="font-size:24px;line-height:1.25;color:{MUTE}">{sub}</p>' if sub else "") + '</div>'
-                f'<div style="width:{v * scale:.0f}px;height:44px;border-radius:0px 22px 22px 0px;background:{col}"></div><p style="font-family:{HEAD};font-size:32px;font-weight:700;line-height:1.3;color:{WHITE}">{pc0(v) if EX else pc(v)}</p></div>')
+                f'{bar(v * scale, 44, col, "0px 22px 22px 0px")}<p style="font-family:{HEAD};font-size:32px;font-weight:700;line-height:1.3;color:{WHITE}">{pc0(v) if EX else pc(v)}</p></div>')
     return out
 
 if "vs-today" in ORDER:
@@ -360,7 +365,7 @@ for i, p in enumerate(P):
         kp = '<div style="display:flex;flex-direction:row;gap:16px">' + "".join(f'<div style="flex:1;display:flex;flex-direction:column;gap:4px;padding:16px 20px;border:1px solid {BORDER};border-radius:12px;background:{BRAND}"><p style="font-size:24px;line-height:1.3;color:{SOFT}">{a_}</p><p style="font-family:{HEAD};font-size:36px;font-weight:700;line-height:1.1;color:{WHITE}">{b_}</p></div>' for a_, b_ in items) + "</div>"
     right = ""
     if EX:
-        sig_rows = "".join(f'<div style="display:flex;flex-direction:row;align-items:center;gap:12px"><p style="width:220px;font-size:24px;line-height:1.2;color:{WHITE}">{fname(f)}</p><div style="width:{max(8, v / top[0][1] * 150):.0f}px;height:12px;border-radius:0px 6px 6px 0px;background:{ACCENT if k == 0 else LBLUE}"></div><p style="font-size:24px;line-height:1.2;color:{SOFT}">{pc0(v)}</p></div>' for k, (f, v) in enumerate(top[:5]))
+        sig_rows = "".join(f'<div style="display:flex;flex-direction:row;align-items:center;gap:12px"><p style="width:220px;font-size:24px;line-height:1.2;color:{WHITE}">{fname(f)}</p>{bar(max(8, v / top[0][1] * 150), 12, ACCENT if k == 0 else LBLUE, "0px 6px 6px 0px")}<p style="font-size:24px;line-height:1.2;color:{SOFT}">{pc0(v)}</p></div>' for k, (f, v) in enumerate(top[:5]))
         why = "".join(f"<li>{esc(w)}</li>" for w in (p.get("why") or [])[:4])  # Slides lists take plain <li>; the <ul> carries the style
         right = (f'<div style="position:absolute;left:1236px;top:128px;width:556px;display:flex;flex-direction:column;gap:18px;padding:36px;border:1px solid {BORDER};border-radius:16px;background:{BRAND}">'
                  f'<h3 style="font-family:{HEAD};font-size:32px;font-weight:700;line-height:1.2;color:{WHITE}">Top signals</h3>{sig_rows}'
