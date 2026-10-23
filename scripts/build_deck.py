@@ -9,7 +9,8 @@ anything missing is simply left out. See references/slides-deck.md for the publi
 """
 import argparse, datetime, json, math, random
 from pathlib import Path
-from common import load_model_dir, load_theme, merge
+import types
+from common import load_extensions, load_model_dir, load_theme, merge
 
 ap = argparse.ArgumentParser()
 ap.add_argument("model_dir")
@@ -31,6 +32,10 @@ BG_B = f"radial-gradient(ellipse at 15% 85%, {BRAND} 0%, {DEEP} 60%)"
 
 story = json.loads(Path(a.story).read_text(encoding="utf-8"))
 D = merge(load_model_dir(a.model_dir), story, TH)
+EXTS = load_extensions()
+for x in EXTS:
+    if hasattr(x, "extend"):
+        x.extend(D, story, Path(a.story))
 ASSETS = json.loads(Path(a.assets).read_text(encoding="utf-8")) if a.assets else {}
 EX = D["audience"] != "analyst"
 P, M, FOLD, SEG, FN, ST = D["products"], D["metrics"], D["fold"], D["segments"], D["featureNames"], D["story"]
@@ -167,6 +172,9 @@ if cb and cb.get("group_share") is not None: ORDER.append("group-share")
 if has_pl: ORDER.append("report-card")
 if has_shap: ORDER += ["driver-map", "families"]
 ORDER += [f"p-{p['key'].replace('lbl_', '')}" for p in P] + ["close"]
+EXT_SLIDES = [sl for x in EXTS if hasattr(x, "deck_slides") for sl in x.deck_slides(D)]  # (id, after, build)
+for sid_, after_, _ in EXT_SLIDES:
+    ORDER.insert(ORDER.index(after_) + 1 if after_ in ORDER else len(ORDER) - 1, sid_)
 S = {}
 src = lambda x: t("", f"Source: {x}")
 
@@ -386,6 +394,13 @@ nxh = (f'<div style="width:520px;display:flex;flex-direction:column;gap:16px;pad
        f'<h3 style="font-family:{HEAD};font-size:40px;font-weight:700;line-height:1.2;color:{WHITE}">{esc(nx.get("title"))}</h3>{para(esc(nx.get("text")), 28) if nx.get("text") else ""}</div>') if nx else ""
 S["close"] = section("close", f'''{h2(t("What this means for us", "Summary"))}<div style="display:flex;flex-direction:row;gap:64px"><div style="flex:1;display:flex;flex-direction:column;gap:32px">{tkh}</div>{nxh}</div>
 {footer(esc(ST.get("title") or ""), "close")}''', notes=cl.get("notes") or "")
+
+# ---------- extension slides (built last, so page numbers already count them) ----------
+API = types.SimpleNamespace(D=D, EX=EX, FOLD=FOLD, FOLDN=FOLDN, t=t, esc=esc, pc=pc, pc0=pc0, grade=grade, section=section, footer=footer,
+                            h2=h2, eyebrow=eyebrow, card=card, big=big, para=para, bars=bars, BG_A=BG_A, BG_B=BG_B, HEAD=HEAD, BODY=BODY,
+                            DEEP=DEEP, BRAND=BRAND, BLUE2=BLUE2, LBLUE=LBLUE, ACCENT=ACCENT, WHITE=WHITE, SOFT=SOFT, MUTE=MUTE, GOOD=GOOD, BORDER=BORDER)
+for sid_, _, build_ in EXT_SLIDES:
+    S[sid_] = build_(API)
 
 # ---------- write ----------
 root = Path(a.root) / "project"

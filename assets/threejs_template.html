@@ -235,6 +235,7 @@ td.top{color:var(--accent);font-weight:700}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>const D = __DATA__;</script>
+__EXT__
 <script>
 (() => {
 'use strict';
@@ -274,7 +275,7 @@ function init3D() {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
   renderer.setClearColor(TH.bg, 1);
   const scene = new T.Scene();
-  const cam = new T.PerspectiveCamera(50, 1, 1, 60000);
+  const cam = new T.PerspectiveCamera(50, 1, 1, 60000); scene.add(cam);  // in the scene so extensions can attach camera-space effects
   const TAN = Math.tan(T.MathUtils.degToRad(25));
 
   const tex = (size, draw) => { const c = document.createElement('canvas'); c.width = c.height = size; draw(c.getContext('2d'), size); return new T.CanvasTexture(c); };
@@ -312,11 +313,12 @@ function init3D() {
     fragmentShader: `varying vec3 vC; varying float vT;
       void main(){ float d=length(gl_PointCoord-0.5); float a=smoothstep(0.5,0.0,d); gl_FragColor=vec4(vC, a*a*vT*0.9); }`,
     transparent: true, depthWrite: false, blending: T.AdditiveBlending});
-  scene.add(new T.Points(starGeo, starMat));
+  const bg = new T.Group(); scene.add(bg);  // the far sky (stars and nebulae), as one group extensions can move
+  bg.add(new T.Points(starGeo, starMat));
   [[TH.deep, 1], [TH.panel, 1], [TH.secondary, .6], [TH.accent, .35], [TH.deep, .8], [TH.panel, .9], [TH.secondary, .5]].forEach(([c, o], i) => {
     const r = rng(40 + i), u = r() * 1.4 - .7, th = r() * Math.PI * 2, d = 16000;
     const s = new T.Sprite(new T.SpriteMaterial({map: nebTex, color: new T.Color(c), transparent: true, opacity: .4 * o, depthWrite: false, blending: T.AdditiveBlending}));
-    s.position.set(Math.cos(th) * Math.sqrt(1-u*u) * d, u * d * .6, Math.sin(th) * Math.sqrt(1-u*u) * d); s.scale.setScalar(9000 + r() * 9000); scene.add(s);
+    s.position.set(Math.cos(th) * Math.sqrt(1-u*u) * d, u * d * .6, Math.sin(th) * Math.sqrt(1-u*u) * d); s.scale.setScalar(9000 + r() * 9000); bg.add(s);
   });
 
   function makeStar(color, size, spike = false, tip = '') {
@@ -452,7 +454,7 @@ function init3D() {
     return {p, outer, inner, labels, picks, i};
   });
 
-  return {T, renderer, scene, cam, TAN, starMat, pStars, skyPos, famPos, skyEdges, famEdges, skyLines, famLines, pale, famCol, famCtr,
+  return {T, renderer, scene, cam, TAN, starMat, bg, pStars, skyPos, famPos, skyEdges, famEdges, skyLines, famLines, pale, famCol, famCtr,
           SKY, CG, AG, chLabels, chPicks, chW, chH, atLabels, atPicks, atW, atH, consts, starColor, spread};
 }
 function setLinesFn(ls, pts, edges) {
@@ -636,6 +638,10 @@ if (hasPL) add({id: 'report-card', sec: 2, layout: 'wide', morph: 0, view: deep(
     el.querySelectorAll('th').forEach(th => th.removeAttribute('aria-sort'));
     b.parentElement.setAttribute('aria-sort', sortState.dir < 0 ? 'descending' : 'ascending'); })),
   notes: t('Scores are AUC × 100. "Within one group" removes the group effect and asks only whether customers are ranked correctly inside a group.', 'AUC includes the group offset; in-group AUC isolates f(x) within each group.')});
+
+// extensions (assets/ext/*.js) may add slides here, after the performance section
+const EXTS = (window.CS_EXT || []);
+for (const x of EXTS) if (x.slides) x.slides({add, t, esc, D, M, MF, P, EX, FOLDN, FOLDS, headlineFold, deep, skyView, insight, pc, pc0, f1, f3, int, score, grade, gradeTag});
 
 if (hasShap) {
   const topP = [...P].sort((a, b) => b.share[0][1] - a.share[0][1])[0];
@@ -853,6 +859,7 @@ function tick(now) {
     setLinesFn(G.skyLines, cpos, G.skyEdges); if (G.famEdges.length) setLinesFn(G.famLines, cpos, G.famEdges); lastM = m;
   }
   if (!reduce) for (const c of G.consts) if (c) c.inner.rotation.y = Math.sin(tm * .22 + c.i) * .24;
+  for (const x of EXTS) if (x.frame) x.frame(G, dt, tm, {reduce});
   G.renderer.render(G.scene, G.cam);
   updateLabels(show);
   if (picks.length && mouse.cx >= 0 && !fly) {
@@ -868,7 +875,7 @@ function tick(now) {
   } else tip.hidden = true;
 }
 
-try { if (!window.THREE) throw new Error('three.js did not load'); G = init3D(); }
+try { if (!window.THREE) throw new Error('three.js did not load'); G = init3D(); for (const x of EXTS) if (x.init) x.init(G, {T: THREE, TH, reduce}); }
 catch (e) { G = null; document.body.classList.add('no-gl'); console.warn('3D disabled:', e && e.message); }
 const h = /^#s(\d+)$/.exec(location.hash || ''); const start = h ? Math.max(0, Math.min(S.length - 1, +h[1] - 1)) : 0;
 if (G) { resize(); addEventListener('resize', resize); }
