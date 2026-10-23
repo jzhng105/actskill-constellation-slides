@@ -233,11 +233,10 @@ td.top{color:var(--accent);font-weight:700}
   <button class="ib" id="fs" aria-label="Full screen"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
 </nav>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>const D = __DATA__;</script>
 __EXT__
 <script>
-(() => {
+window.CS_BOOT = () => {
 'use strict';
 /* ---------------------------------------------------------------- data */
 const P = D.products, M = D.metrics, FN = D.featureNames, ST = D.story || {}, TH = D.theme.colors;
@@ -456,6 +455,20 @@ function init3D() {
 
   return {T, renderer, scene, cam, TAN, starMat, bg, pStars, skyPos, famPos, skyEdges, famEdges, skyLines, famLines, pale, famCol, famCtr,
           SKY, CG, AG, chLabels, chPicks, chW, chH, atLabels, atPicks, atW, atH, consts, starColor, spread};
+}
+// without 3D (no WebGL, or three.js blocked), keep a twinkling 2D starfield instead of an empty sky
+function starfield2D() {
+  const cv = $('#gl'), g = cv.getContext && cv.getContext('2d');
+  if (!g) return;
+  const TH = D.theme.colors, tints = ['#ffffff', '#ffffff', '#ffffff', TH.soft, TH.accent];
+  let stars = [], W = 0, H = 0;
+  const seed = () => { const dpr = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const R = rng(5); stars = Array.from({length: Math.round(W * H / 2600)}, () => ({x: R() * W, y: R() * H, r: R() < .05 ? 1.6 + R() * 1.2 : .5 + R() * .9, c: tints[Math.floor(R() * tints.length)], p: R() * 6.283, s: .5 + R() * 1.5})); };
+  const draw = now => { g.clearRect(0, 0, W, H);
+    for (const st of stars) { g.globalAlpha = reduce ? .8 : .45 + .55 * (.5 + .5 * Math.sin(now / 1000 * st.s + st.p)); g.fillStyle = st.c; g.beginPath(); g.arc(st.x, st.y, st.r, 0, 6.283); g.fill(); } };
+  seed(); addEventListener('resize', () => { seed(); draw(performance.now()); });
+  if (reduce) return draw(0);
+  const loop = now => { draw(now); requestAnimationFrame(loop); }; requestAnimationFrame(loop);
 }
 function setLinesFn(ls, pts, edges) {
   const a = ls.geometry.attributes.position.array;
@@ -877,10 +890,19 @@ function tick(now) {
 }
 
 try { if (!window.THREE) throw new Error('three.js did not load'); G = init3D(); for (const x of EXTS) if (x.init) x.init(G, {T: THREE, TH, reduce}); }
-catch (e) { G = null; document.body.classList.add('no-gl'); console.warn('3D disabled:', e && e.message); }
+catch (e) { G = null; document.body.classList.add('no-gl'); console.warn('3D disabled:', e && e.message); starfield2D(); }
 const h = /^#s(\d+)$/.exec(location.hash || ''); const start = h ? Math.max(0, Math.min(S.length - 1, +h[1] - 1)) : 0;
 if (G) { resize(); addEventListener('resize', resize); }
 goTo(start, true);
 if (G) requestAnimationFrame(tick);
-})();
+};
+// load three.js from the first CDN that answers (cdnjs, then jsDelivr, then unpkg), then start; without it the page
+// still runs, with a 2D starfield instead of the 3D sky
+(function load(srcs) {
+  if (window.THREE || !srcs.length) return window.CS_BOOT();
+  const el = document.createElement('script');
+  el.src = srcs[0]; el.onload = () => load(window.THREE ? [] : srcs.slice(1)); el.onerror = () => load(srcs.slice(1));
+  document.head.appendChild(el);
+})(['https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
+    'https://unpkg.com/three@0.128.0/build/three.min.js']);
 </script>
